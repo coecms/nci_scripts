@@ -1,0 +1,216 @@
+#!/bin/bash
+
+# Scott Wales 20190522
+
+print_help() {
+cat <<EOF
+Run a Jupyter notebook on Raijin's compute nodes, presenting the interface in a
+browser on the local machine
+
+General Options:
+    -h:         Print help
+    -l:         NCI username
+    -L:         NCI login node (default 'gadi.nci.org.au')
+    -e:         Conda environment
+
+Queue Options:
+    -q QUEUE:   Queue name
+    -n NCPU:    Use NCPU cpus
+    -m MEM:     Memory allocation (default 4*NCPU GB)
+    -t TIME:    Walltime limit (default 1 hour)
+    -J JOBFS:   Jobfs allocation (default 100 GB)
+    -P PROJ:    Submit job under project PROJ
+
+EOF
+}
+
+set -eu
+
+# Internal defaults
+USER=''
+PROJECT='' # Note- should be the full pbs flag '-P a12' if overriding
+LOGINNODE='gadi.nci.org.au'
+QUEUE='express'
+NCPUS='1'
+MEM=''
+WALLTIME=1:00:00
+JOBFS=100gb
+CONDA_ENV=analysis3-20.01
+
+# Handle arguments
+optspec="hl:L:q:n:m:t:J:P:e:"
+while getopts "$optspec" optchar; do
+    case "${optchar}" in
+        h)
+            print_help
+            exit 2
+            ;;
+        l)
+            USER="${OPTARG}"
+            ;;
+        L)
+            LOGINNODE="${OPTARG}"
+            ;;
+        q)
+            QUEUE="${OPTARG}"
+            ;;
+        n)
+            NCPUS="${OPTARG}"
+            ;;
+        m)
+            MEM="${OPTARG}"
+            ;;
+        t)
+            WALLTIME="${OPTARG}"
+            ;;
+        J)
+            JOBFS="${OPTARG}"
+            ;;
+        P)
+            PROJECT="-P '${OPTARG}'"
+            ;;
+        e)
+            CONDA_ENV="${OPTARG}"
+            ;;
+        *)
+            print_help
+            exit 2
+            ;;
+    esac
+done
+
+# This gets evaluated on Raijin in the SSH script
+WORKDIR=\$TMPDIR/runjp
+
+SSH='ssh -oBatchMode=yes'
+if [ -n "$USER" ]; then
+    SSH="${SSH} -l ${USER}"
+fi
+if [ -z "$MEM" ]; then
+    MEM="$(( NCPUS * 4 ))gb"
+fi
+
+SUBMITOPTS="-N jupyter-notebook $PROJECT -q '$QUEUE' -l 'ncpus=${NCPUS},mem=${MEM},walltime=${WALLTIME},jobfs=${JOBFS}'"
+
+echo "Starting notebook on ${LOGINNODE}..."
+
+# Check connection
+$SSH "$LOGINNODE" true
+
+echo "qsub ${SUBMITOPTS}"
+
+# Kill the job if this top-level script is cancelled while the job is still in the queue
+trap "{ echo 'Stopping queued job... (Ctrl-C will leave job in the queue)' ; $SSH \"$LOGINNODE\" <<< \"qdel \\\$(cat \\$WORKDIR/jobid)\" ; }" EXIT
+
+message=$(
+$SSH -q "$LOGINNODE" <<EOF | tail -n 1
+
+set -eu
+
+WORKDIR="$WORKDIR"
+mkdir -p "\$WORKDIR"
+rm -f "\$WORKDIR/message"
+
+cat > "\$WORKDIR/runjp.sh" <<EOQ
+#!/bin/bash
+
+module purge
+
+eval "\\\$(/g/data/hh5/public/apps/miniconda3/bin/conda shell.bash hook)"
+conda activate "${CONDA_ENV}"
+
+set -eu
+
+# Jupyter security token
+TOKEN=\\\$(uuidgen)
+
+# Find a remote port https://unix.stackexchange.com/a/132524
+PORT=\\\$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+
+# Write message file with info for the local connection
+echo "\\\$HOSTNAME \\\$TOKEN \\\$PBS_JOBID \\\$PORT" > "\$WORKDIR/message"
+
+echo "runjp log dir \$WORKDIR"
+cat "\$WORKDIR/message"
+
+jupyter notebook --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
+EOQ
+
+storage="gdata/hh5"
+for p in \$(id -nG); do
+    if [ \$p = "access.dev" ]; then continue; fi
+    if [ \$p = "access.admin" ]; then continue; fi
+    if [ -d "/scratch/\$p" ]; then storage="scratch/\$p+\$storage"; fi
+    if [ -d "/g/data/\$p" ]; then storage="gdata/\$p+\$storage"; fi
+done
+
+qsub $SUBMITOPTS -l "storage=\$storage" -j oe -o "\$WORKDIR/pbs.log" "\$WORKDIR/runjp.sh" > "\$WORKDIR/jobid"
+
+# Wait for the message file to appear, then return to the local process
+while [ ! -f "\$WORKDIR/message" ]; do
+    sleep 5
+done
+cat "\$WORKDIR/message"
+EOF
+)
+
+echo "Remote Message: '$message'"
+
+# Grab info from the PBS job
+read jobhost token jobid remote_port <<< "$message"
+
+# Find a local port
+for local_port in {8888..9000}; do
+    if ! echo > /dev/tcp/127.0.0.1/${local_port} ; then
+        break
+    fi 2> /dev/null
+done
+
+echo "Notebook running as PBS job ${jobid}"
+echo
+echo "Starting tunnel..."
+$SSH -N -L "${local_port}:$jobhost:${remote_port}" -L "8787:$jobhost:8787" "$LOGINNODE" &
+tunnelid=$!
+
+# Shut everything down on exit
+trap "{ echo 'Closing connections... (Ctrl-C will leave job in the queue)' ; kill $tunnelid ; $SSH "$LOGINNODE" qdel $jobid ; }" EXIT
+
+# Wait for startup then open a browser
+sleep 5
+URL="http://localhost:${local_port}/lab?token=${token}"
+
+cat << EOF
+
+Start a Dask cluster in your notebook with
+
+---------------------------------------------------------------
+import os
+import dask.distributed
+
+# Edit as desired
+threads_per_worker = 1
+
+try:
+    c # Already running
+except NameError:
+    c = dask.distributed.Client(
+        n_workers=int(os.environ['PBS_NCPUS'])//threads_per_worker,
+        threads_per_worker=threads_per_worker,
+        memory_limit=f'{4*threads_per_worker}gb',
+        local_directory=os.path.join(os.environ['PBS_JOBFS'],
+                                     'dask-worker-space')
+    )
+c
+---------------------------------------------------------------
+
+Opening ${URL}
+EOF
+
+if [ "$(uname)" = "Darwin" ]; then
+    open "$URL"
+else
+    xdg-open "$URL"
+fi
+
+# Keep open as long as the tunnel exists
+wait "$tunnelid"
