@@ -1,0 +1,100 @@
+#!/g/data3/hh5/public/apps/miniconda3/envs/analysis3-19.10/bin/python
+
+import pandas
+import subprocess
+import json
+import argparse
+import re
+
+def decode_bytes(s):
+    if pandas.isnull(s):
+        return s
+
+    scales = {
+        'k': 1024,
+        }
+    if not s.endswith('b'):
+        raise Exception(f"{s} doesn't look like a size")
+
+    scale = 1
+    s = s[:-1]
+
+    if not s[-1].isdigit():
+        scale = scales[s[-1]]
+        s = s[:-1]
+
+    return int(s) * scale
+
+
+def maybe_get(x, key):
+    if pandas.isnull(x):
+        return x
+    else:
+        return x[key]
+
+
+def clean_qstat_json(stream):
+    """
+    Clean up the improperly escaped JSON returned by qstat
+    """
+    string_entry_re = re.compile(r'^\s*"(?P<key>.+)":"(?P<value>.+)"(?P<comma>,?)$')
+
+    lines = []
+
+    for line in stream.splitlines():
+        match = string_entry_re.match(line)
+        if match is not None:
+            fixed_value = match.group('value').replace('"', '\\"')
+            line = f'"{match.group("key")}":"{fixed_value}"{match.group("comma")}'
+
+        lines.append(line)
+
+    return json.loads(''.join(lines))
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--historical','-x', help='Show historical info', action='store_true')
+    args = parser.parse_args()
+
+    command= ['/opt/pbs/default/bin/qstat','-f','-F','json']
+
+    if args.historical:
+        command.append('-x')
+
+    r = subprocess.run(command, stdout=subprocess.PIPE, universal_newlines=True)
+    r.check_returncode()
+
+    j = clean_qstat_json(r.stdout)
+
+    if 'Jobs' not in j:
+        return
+
+    df = pandas.DataFrame.from_dict(j['Jobs'], orient='index')
+
+    df['resources_used'] = df.get('resources_used', pandas.Series(index=df.index))
+    df['stime'] = df.get('stime', pandas.Series(index=df.index))
+
+    df['ncpus'] = df['Resource_List'].apply(maybe_get,key='ncpus')
+    df['cputime'] = pandas.to_timedelta(df['resources_used'].apply(maybe_get,key='cput'))
+    df['walltime'] = pandas.to_timedelta(df['resources_used'].apply(maybe_get,key='walltime'))
+    df['mem_used'] = df['resources_used'].apply(lambda x: decode_bytes(maybe_get(x, 'mem')))
+    df['mem_request'] = df['Resource_List'].apply(lambda x: decode_bytes(x['mem']))
+    df['mem_pct'] = df['mem_used'] / df['mem_request'] * 100
+    df['cpu_pct'] = df['cputime'] / df['walltime'] / df['ncpus'] * 100
+    df['state'] = df['job_state']
+    df['stime'] = pandas.to_datetime(df['stime']).fillna(pandas.Timestamp.now())
+    df['qtime'] = (df['stime'] - pandas.to_datetime(df['qtime'])).apply(lambda x: x.round('min'))
+    df['su'] = pandas.to_timedelta(df['walltime']).apply(lambda x: x.total_seconds()) / (60*60) * df['ncpus'] * 2
+
+    queue_scale = {'express-exec': 3}
+    df['su'] = df['su'] * df['queue'].apply(lambda x: queue_scale.get(x, 1))
+    df['su'] = df['su'].round()
+
+    table =  df[['Job_Name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
+
+    pandas.options.display.width = 0
+    print(table)
+
+if __name__ == '__main__':
+    main()
