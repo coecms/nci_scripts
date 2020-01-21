@@ -5,6 +5,7 @@ import subprocess
 import json
 import argparse
 import re
+import numpy
 
 def decode_bytes(s):
     if pandas.isnull(s):
@@ -85,11 +86,15 @@ def main():
     df['state'] = df['job_state']
     df['stime'] = pandas.to_datetime(df['stime']).fillna(pandas.Timestamp.now())
     df['qtime'] = (df['stime'] - pandas.to_datetime(df['qtime'])).apply(lambda x: x.round('min'))
-    df['su'] = pandas.to_timedelta(df['walltime']).apply(lambda x: x.total_seconds()) / (60*60) * df['ncpus'] * 2
+    df['wall_hours'] = pandas.to_timedelta(df['walltime']).apply(lambda x: x.total_seconds()) / (60*60)
 
-    queue_scale = {'express-exec': 3}
-    df['su'] = df['su'] * df['queue'].apply(lambda x: queue_scale.get(x, 1))
-    df['su'] = df['su'].round()
+    df['su_mem'] = df['mem_request'] / (4*1024**3)
+
+    df['su'] = df['ncpus'].where(df['ncpus'] > df['su_mem'], df['su_mem']) * df['wall_hours']
+
+    queue_scale = {'express-exec': 6}
+    df['su'] = df['su'] * df['queue'].apply(lambda x: queue_scale.get(x, 2))
+    df['su'] = df['su']
 
     table =  df[['Job_Name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
 
