@@ -5,7 +5,6 @@ import subprocess
 import json
 import argparse
 import re
-import numpy
 
 def decode_bytes(s):
     if pandas.isnull(s):
@@ -88,13 +87,14 @@ def main():
     df['qtime'] = (df['stime'] - pandas.to_datetime(df['qtime'])).apply(lambda x: x.round('min'))
     df['wall_hours'] = pandas.to_timedelta(df['walltime']).apply(lambda x: x.total_seconds()) / (60*60)
 
-    df['su_mem'] = df['mem_request'] / (4*1024**3)
+    # The number of cpus this would use based on the memory request
+    df['ncpus_by_mem'] = df['mem_request'] / (4*1024**3)
 
-    df['su'] = df['ncpus'].where(df['ncpus'] > df['su_mem'], df['su_mem']) * df['wall_hours']
+    # Multiply the larger of ncpus, ncpus_by_mem by the walltime
+    df['su'] = df['ncpus'].where(df['ncpus'] > df['ncpus_by_mem'], df['ncpus_by_mem']) * df['wall_hours']
 
     queue_scale = {'express-exec': 6}
     df['su'] = df['su'] * df['queue'].apply(lambda x: queue_scale.get(x, 2))
-    df['su'] = df['su']
 
     table =  df[['Job_Name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
 
