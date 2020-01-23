@@ -1,0 +1,91 @@
+#!/bin/bash
+
+check_return() {
+    retval=$?
+
+    message=$1
+
+    if [ $retval == 0 ]; then
+        echo -e "$message" "\x1b[32mSUCCESS\x1b[0m"
+    else
+        echo -e "$message" "\x1b[31mFAILED\x1b[0m"
+        if [ $# -gt 1 ]; then
+            fixer=$2
+            read -p "Attempt to fix? [y/N] " dofix
+            case $dofix in
+                [yY]* ) $fixer;;
+                * ) ;;
+            esac
+        fi
+    fi
+}
+
+setup_gadi_ssh() {
+    # Make a passphraseless ssh key
+    if [ ! -f ~/.ssh/id_rsa_cylc_restricted.pub ]; then
+        echo "Creating a passphraseless SSH key"
+        ssh-keygen -N '' -f ~/.ssh/id_rsa_cylc -C "Accessdev Cylc to Gadi"
+        echo "from=\"130.56.244.72\",no-agent-forwarding,no-port-forwarding $(cat ~/.ssh/id_rsa_cylc.pub)" > ~/.ssh/id_rsa_cylc_restricted.pub
+
+        cat >> ~/.ssh/config << EOF
+Host gadi.nci.org.au
+IdentityFile ~/.ssh/id_rsa_cylc
+EOF
+    fi
+
+    echo "Copying new key to Gadi (you may be prompted for your NCI password)"
+    export SSH_AUTH_SOCK=$OLD_SSH_AUTH_SOCK
+    ssh-copy-id -i ~/.ssh/id_rsa_cylc_restricted.pub gadi.nci.org.au
+    unset SSH_AUTH_SOCK
+
+    ssh -oBatchMode=true gadi.nci.org.au true &> /dev/null
+    check_return "Connecting in batch mode from accessdev to gadi"
+}
+
+setup_return_ssh() {
+    ssh gadi.nci.org.au /bin/bash <<EOS
+    # Make a passphraseless ssh key
+    if [ ! -f ~/.ssh/id_rsa_cylc_restricted.pub ]; then
+        echo "Creating a passphraseless SSH key"
+        ssh-keygen -N '' -f ~/.ssh/id_rsa_cylc -C "Gadi Cylc to Accessdev"
+        echo "no-agent-forwarding,no-port-forwarding \$(cat ~/.ssh/id_rsa_cylc.pub)" > ~/.ssh/id_rsa_cylc_restricted.pub
+
+        cat >> ~/.ssh/config << EOF
+Host accessdev.nci.org.au
+IdentityFile ~/.ssh/id_rsa_cylc
+EOF
+    fi
+EOS
+
+    echo "Copying new key to Accessdev"
+    ssh gadi.nci.org.au cat ~/.ssh/id_rsa_cylc_restricted.pub >> ~/.ssh/authorized_keys
+
+    ssh -oBatchMode=true gadi.nci.org.au ssh -oBatchMode=true accessdev.nci.org.au true &> /dev/null
+    check_return "Connecting in batch mode from gadi to accessdev"
+}
+
+if [ "$HOSTNAME" != "accessdev.nci.org.au" ]; then
+    echo "Run this script on accessdev"
+    exit -1
+fi
+
+id -Gn | grep -w access &> /dev/null
+check_return "Member of NCI 'access' group"
+
+
+pgrep -U $USER gpg-agent &> /dev/null
+check_return "'mosrs-setup' has been run and GPG agent is running" mosrs-setup
+
+ssh -oBatchMode=true gadi.nci.org.au true &> /dev/null
+check_return "Connecting in batch mode from accessdev to gadi, with agent"
+
+# Disable SSH agent
+OLD_SSH_AUTH_SOCK=$SSH_AUTH_SOCK
+unset SSH_AUTH_SOCK
+
+ssh -oBatchMode=true gadi.nci.org.au true &> /dev/null
+check_return "Connecting in batch mode from accessdev to gadi, no agent" setup_gadi_ssh
+
+
+ssh -oBatchMode=true gadi.nci.org.au ssh -oBatchMode=true accessdev.nci.org.au true &> /dev/null
+check_return "Connecting in batch mode from gadi to accessdev, no agent" setup_return_ssh
