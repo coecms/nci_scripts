@@ -138,6 +138,7 @@ export DASK_LABEXTENSION__FACTORY__CLASS=LocalCluster
 export DASK_LABEXTENSION__FACTORY__KWARGS__MEMORY_LIMIT=3900MB
 export DASK_LABEXTENSION__FACTORY__KWARGS__LOCAL_DIRECTORY=\\\$PBS_JOBFS/dask-worker-space
 export DASK_LABEXTENSION__DEFAULT__WORKERS=\\\$PBS_NCPUS
+export DASK_DISTRIBUTED__DASHBOARD__LINK="/proxy/{port}/status"
 
 jupyter notebook --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
 EOQ
@@ -187,7 +188,28 @@ URL="http://localhost:${local_port}/lab?token=${token}"
 
 cat << EOF
 
-Start a Dask cluster in your notebook using the Dask panel of Jupyterlab
+Start a Dask cluster in your notebook using the Dask panel of Jupyterlab, or by
+running
+
+---------------------------------------------------------------
+import os
+import dask.distributed
+
+# Edit as desired
+threads_per_worker = 1
+
+try:
+    c # Already running
+except NameError:
+    c = dask.distributed.Client(
+        n_workers=int(os.environ['PBS_NCPUS'])//threads_per_worker,
+        threads_per_worker=threads_per_worker,
+        memory_limit=f'{3.9*threads_per_worker}gb',
+        local_directory=os.path.join(os.environ['PBS_JOBFS'],
+                                     'dask-worker-space')
+    )
+c
+---------------------------------------------------------------
 
 Opening ${URL}
 EOF
