@@ -38,8 +38,11 @@ EOF
     ssh-copy-id -i ~/.ssh/id_rsa_cylc_restricted.pub gadi.nci.org.au
     unset SSH_AUTH_SOCK
 
+    ssh -oBatchMode=true -i ~/.ssh/id_rsa_cylc gadi.nci.org.au true &> /dev/null
+    check_return "Connecting in batch mode from accessdev to gadi (explicit key)"
+
     ssh -oBatchMode=true gadi.nci.org.au true &> /dev/null
-    check_return "Connecting in batch mode from accessdev to gadi"
+    check_return "Connecting in batch mode from accessdev to gadi (implicit key)"
 }
 
 setup_return_ssh() {
