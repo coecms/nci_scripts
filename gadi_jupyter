@@ -30,7 +30,7 @@ set -eu
 USER=''
 PROJECT='' # Note- should be the full pbs flag '-P a12' if overriding
 LOGINNODE='gadi.nci.org.au'
-QUEUE='express'
+QUEUE='normal'
 NCPUS='1'
 MEM=''
 WALLTIME=1:00:00
@@ -133,6 +133,13 @@ echo "\\\$HOSTNAME \\\$TOKEN \\\$PBS_JOBID \\\$PORT" > "\$WORKDIR/message"
 echo "runjp log dir \$WORKDIR"
 cat "\$WORKDIR/message"
 
+export DASK_LABEXTENSION__FACTORY__MODULE=dask.distributed
+export DASK_LABEXTENSION__FACTORY__CLASS=LocalCluster
+export DASK_LABEXTENSION__FACTORY__KWARGS__MEMORY_LIMIT=3900MB
+export DASK_LABEXTENSION__FACTORY__KWARGS__LOCAL_DIRECTORY=\\\$PBS_JOBFS/dask-worker-space
+export DASK_LABEXTENSION__DEFAULT__WORKERS=\\\$PBS_NCPUS
+export DASK_DISTRIBUTED__DASHBOARD__LINK="/proxy/{port}/status"
+
 jupyter notebook --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
 EOQ
 
@@ -169,7 +176,7 @@ done
 echo "Notebook running as PBS job ${jobid}"
 echo
 echo "Starting tunnel..."
-$SSH -N -L "${local_port}:$jobhost:${remote_port}" -L "8787:$jobhost:8787" "$LOGINNODE" &
+$SSH -N -L "${local_port}:$jobhost:${remote_port}" "$LOGINNODE" &
 tunnelid=$!
 
 # Shut everything down on exit
@@ -181,7 +188,8 @@ URL="http://localhost:${local_port}/lab?token=${token}"
 
 cat << EOF
 
-Start a Dask cluster in your notebook with
+Start a Dask cluster in your notebook using the Dask panel of Jupyterlab, or by
+running
 
 ---------------------------------------------------------------
 import os
@@ -196,7 +204,7 @@ except NameError:
     c = dask.distributed.Client(
         n_workers=int(os.environ['PBS_NCPUS'])//threads_per_worker,
         threads_per_worker=threads_per_worker,
-        memory_limit=f'{4*threads_per_worker}gb',
+        memory_limit=f'{3.9*threads_per_worker}gb',
         local_directory=os.path.join(os.environ['PBS_JOBFS'],
                                      'dask-worker-space')
     )
