@@ -30,7 +30,7 @@ set -eu
 USER=''
 PROJECT='' # Note- should be the full pbs flag '-P a12' if overriding
 LOGINNODE='gadi.nci.org.au'
-QUEUE='express'
+QUEUE='normal'
 NCPUS='1'
 MEM=''
 WALLTIME=1:00:00
