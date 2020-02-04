@@ -16,3 +16,8 @@ gadi_jupyter
 ------------
 
 Run a Jupyter notebook on Gadi, displaying it in a local web browser (run from your own computer)
+
+qsubs
+-----
+
+`qsub` but it requests all of the `-l storage=` options for projects you're a member of
