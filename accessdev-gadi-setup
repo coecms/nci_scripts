@@ -28,7 +28,7 @@ setup_gadi_ssh() {
         echo "from=\"130.56.244.72\",no-agent-forwarding,no-port-forwarding $(cat ~/.ssh/id_rsa_cylc.pub)" > ~/.ssh/id_rsa_cylc_restricted.pub
 
         cat >> ~/.ssh/config << EOF
-Host gadi.nci.org.au
+Host gadi.nci.org.au gadi
 IdentityFile ~/.ssh/id_rsa_cylc
 EOF
     fi
