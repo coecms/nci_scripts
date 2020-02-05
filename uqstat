@@ -88,12 +88,13 @@ def main():
     df['wall_hours'] = pandas.to_timedelta(df['walltime']).apply(lambda x: x.total_seconds()) / (60*60)
 
     # The number of cpus this would use based on the memory request
-    df['ncpus_by_mem'] = df['mem_request'] / (4*1024**3)
+    queue_mem = {'hugemem-exec': 32}
+    df['ncpus_by_mem'] = df['mem_request'] / (df['queue'].apply(lambda x: queue_mem.get(x, 4)) * 1024**3)
 
     # Multiply the larger of ncpus, ncpus_by_mem by the walltime
     df['su'] = df['ncpus'].where(df['ncpus'] > df['ncpus_by_mem'], df['ncpus_by_mem']) * df['wall_hours']
 
-    queue_scale = {'express-exec': 6}
+    queue_scale = {'express-exec': 6, 'hugemem-exec': 3}
     df['su'] = df['su'] * df['queue'].apply(lambda x: queue_scale.get(x, 2))
 
     table =  df[['Job_Name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
