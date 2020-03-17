@@ -1,10 +1,11 @@
-#!/g/data3/hh5/public/apps/miniconda3/envs/analysis3-19.10/bin/python
+#!/g/data3/hh5/public/apps/miniconda3/envs/analysis3-20.01/bin/python
 
 import pandas
 import subprocess
 import json
 import argparse
 import re
+import sys
 
 def decode_bytes(s):
     if pandas.isnull(s):
@@ -51,10 +52,32 @@ def clean_qstat_json(stream):
 
     return json.loads(''.join(lines))
 
+description = """
+Print more detailed information from qstat
+
+Returns the following columns for each job:
+    project:    NCI project the job was submitted under
+    job_name:   Name of the job
+    queue:      Queue the job was submitted to
+    state:      Current state - 'Q' in queue, 'R' running, 'H' held, 'E' finished
+    ncpus:      Number of cpus requested
+    walltime:   Walltime the job has run for so far
+    su:         SU cost of the job so far
+    mem_pct:    Percent of the memory request used
+    cpu_pct:    Percent of time CPUs have been active
+    qtime:      Time the job spent in the queue before starting
+
+If 'mem_pct' is below 80% make sure you're not requesting too much memory (4GB
+per CPU or less is fine)
+
+If 'cpu_pct' is below 80% and you're requesting more than one CPU make sure
+your job is making proper use of parallelisation
+"""
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--historical','-x', help='Show historical info', action='store_true')
+    parser.add_argument('--format','-f', help='Output format', choices=['table','csv','json'], default='table')
     args = parser.parse_args()
 
     command= ['/opt/pbs/default/bin/qstat','-f','-F','json']
@@ -72,8 +95,8 @@ def main():
 
     df = pandas.DataFrame.from_dict(j['Jobs'], orient='index')
 
-    df['resources_used'] = df.get('resources_used', pandas.Series(index=df.index))
-    df['stime'] = df.get('stime', pandas.Series(index=df.index))
+    df['resources_used'] = df.get('resources_used', pandas.Series(index=df.index, dtype='object'))
+    df['stime'] = df.get('stime', pandas.Series(index=df.index, dtype='datetime64[ns]'))
 
     df['ncpus'] = df['Resource_List'].apply(maybe_get,key='ncpus')
     df['cputime'] = pandas.to_timedelta(df['resources_used'].apply(maybe_get,key='cput'))
@@ -99,8 +122,17 @@ def main():
 
     table =  df[['project','Job_Name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
 
-    pandas.options.display.width = 0
-    print(table)
+    if args.format == 'table':
+        pct_format = lambda x: f'{x:.0f}%'
+        round_format = lambda x: f'{x:.0f}'
+        table.to_string(sys.stdout, formatters={'su': round_format, 'mem_pct': pct_format, 'cpu_pct': pct_format})
+        print()
+    elif args.format == 'csv':
+        table.to_csv(sys.stdout, index_label='jobid')
+    elif args.format == 'json':
+        table.to_json(sys.stdout, orient='index', indent=4, date_unit='s')
+    else:
+        raise NotImplementedError
 
 if __name__ == '__main__':
     main()
