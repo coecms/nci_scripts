@@ -214,10 +214,16 @@ c
 Opening ${URL}
 EOF
 
-if [ "$(uname)" = "Darwin" ]; then
-    open "$URL"
-else
+if which xdg-open > /dev/null; then
     xdg-open "$URL"
+elif which open > /dev/null; then
+    open "$URL"
+elif which start > /dev/null; then
+    start "$URL"
+else
+    echo
+    echo "----"
+    echo "Notebook available at $URL"
 fi
 
 # Keep open as long as the tunnel exists
