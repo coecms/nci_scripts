@@ -218,8 +218,8 @@ if which xdg-open > /dev/null; then
     xdg-open "$URL"
 elif which open > /dev/null; then
     open "$URL"
-elif which start > /dev/null; then
-    start "$URL"
+elif which explorer > /dev/null; then
+    explorer "$URL"
 else
     echo
     echo "----"
