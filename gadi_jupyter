@@ -214,6 +214,7 @@ c
 Opening ${URL}
 EOF
 
+set +e
 if which xdg-open > /dev/null; then
     xdg-open "$URL"
 elif which open > /dev/null; then
@@ -225,6 +226,7 @@ else
     echo "----"
     echo "Notebook available at $URL"
 fi
+set -e
 
 # Keep open as long as the tunnel exists
 wait "$tunnelid"
