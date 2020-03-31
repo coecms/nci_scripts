@@ -6,6 +6,8 @@ import json
 import argparse
 import re
 import sys
+import pymunge
+import requests
 
 def decode_bytes(s):
     if pandas.isnull(s):
@@ -33,6 +35,15 @@ def maybe_get(x, key):
     else:
         return x[key]
 
+def get_list(s, lst, key):
+    if f'{lst}.{key}' in s:
+        return s.get(f'{lst}.{key}', None)
+
+    try:
+        return s.get(lst, {}).get(key, None)
+    except AttributeError:
+        return None
+
 
 def clean_qstat_json(stream):
     """
@@ -51,6 +62,39 @@ def clean_qstat_json(stream):
         lines.append(line)
 
     return json.loads(''.join(lines))
+
+def qstat_df(historical=False):
+    command= ['/opt/pbs/default/bin/qstat','-f','-F','json']
+
+    if historical:
+        command.append('-x')
+
+    r = subprocess.run(command, stdout=subprocess.PIPE, universal_newlines=True)
+    r.check_returncode()
+
+    j = clean_qstat_json(r.stdout)
+    df = pandas.DataFrame.from_dict(j['Jobs'], orient='index')
+    df['stime'] = df.get('stime', pandas.Series(index=df.index, dtype='datetime64[ns]'))
+    df['stime'] = pandas.to_datetime(df['stime'])
+    df['qtime'] = pandas.to_datetime(df['qtime'])
+    return df
+
+def nqstat_df(project):
+    url = 'http://gadi-pbs-01.gadi.nci.org.au:8812/qstat'
+    token = pymunge.encode().decode('utf-8')
+    headers = { 'Authorization': "MUNGE %s" % (token) }
+    params = {'project': project}
+    
+    response = requests.get(url, params=params, headers=headers, timeout=120.0)
+
+    j = response.json()
+    df = pandas.DataFrame(j['qstat'])
+    df = df.set_index('Job_ID')
+    df.index.name = None
+    df['stime'] = df.get('stime', pandas.Series(index=df.index, dtype='datetime64[ns]'))
+    df['stime'] = pandas.to_datetime(df['stime'], unit='s')
+    df['qtime'] = pandas.to_datetime(df['qtime'], unit='s')
+    return df
 
 description = """
 Print more detailed information from qstat
@@ -78,36 +122,25 @@ def main():
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--historical','-x', help='Show historical info', action='store_true')
     parser.add_argument('--format','-f', help='Output format', choices=['table','csv','json'], default='table')
+    parser.add_argument('--project','-P', help='Show all jobs in a project')
     args = parser.parse_args()
 
-    command= ['/opt/pbs/default/bin/qstat','-f','-F','json']
+    if args.project is None:
+        df = qstat_df(args.historical)
+    else:
+        df = nqstat_df(args.project)
 
-    if args.historical:
-        command.append('-x')
+    df['ncpus'] = df.apply(get_list, lst='Resource_List', key='ncpus', axis=1).astype('i')
+    df['mem_request'] = df.apply(get_list, lst='Resource_List', key='mem', axis=1).apply(decode_bytes)
 
-    r = subprocess.run(command, stdout=subprocess.PIPE, universal_newlines=True)
-    r.check_returncode()
+    df['cputime'] = pandas.to_timedelta(df.apply(get_list, lst='resources_used', key='cput', axis=1))
+    df['walltime'] = pandas.to_timedelta(df.apply(get_list, lst='resources_used', key='walltime', axis=1))
+    df['mem_used'] = df.apply(get_list, lst='resources_used', key='mem', axis=1).apply(decode_bytes)
 
-    j = clean_qstat_json(r.stdout)
-
-    if 'Jobs' not in j:
-        return
-
-    df = pandas.DataFrame.from_dict(j['Jobs'], orient='index')
-
-    df['resources_used'] = df.get('resources_used', pandas.Series(index=df.index, dtype='object'))
-    df['stime'] = df.get('stime', pandas.Series(index=df.index, dtype='datetime64[ns]'))
-
-    df['ncpus'] = df['Resource_List'].apply(maybe_get,key='ncpus')
-    df['cputime'] = pandas.to_timedelta(df['resources_used'].apply(maybe_get,key='cput'))
-    df['walltime'] = pandas.to_timedelta(df['resources_used'].apply(maybe_get,key='walltime'))
-    df['mem_used'] = df['resources_used'].apply(lambda x: decode_bytes(maybe_get(x, 'mem')))
-    df['mem_request'] = df['Resource_List'].apply(lambda x: decode_bytes(x['mem']))
     df['mem_pct'] = df['mem_used'] / df['mem_request'] * 100
     df['cpu_pct'] = df['cputime'] / df['walltime'] / df['ncpus'] * 100
     df['state'] = df['job_state']
-    df['stime'] = pandas.to_datetime(df['stime']).fillna(pandas.Timestamp.now())
-    df['qtime'] = (df['stime'] - pandas.to_datetime(df['qtime'])).apply(lambda x: x.round('min'))
+    df['qtime'] = (df['stime'] - df['qtime']).apply(lambda x: x.round('min'))
     df['wall_hours'] = pandas.to_timedelta(df['walltime']).apply(lambda x: x.total_seconds()) / (60*60)
 
     # The number of cpus this would use based on the memory request
@@ -120,7 +153,9 @@ def main():
     queue_scale = {'express-exec': 6, 'hugemem-exec': 3}
     df['su'] = df['su'] * df['queue'].apply(lambda x: queue_scale.get(x, 2))
 
-    table =  df[['project','Job_Name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
+    df['user'] = df['Job_Owner'].apply(lambda x: x.split('@')[0])
+
+    table =  df[['project','user','Job_Name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
 
     if args.format == 'table':
         pct_format = lambda x: f'{x:.0f}%'
