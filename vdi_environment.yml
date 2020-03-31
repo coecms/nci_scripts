@@ -1,0 +1,10 @@
+name: jupyter_vdi
+
+channels:
+    - conda-forge
+    - defaults
+
+dependencies:
+    - python >= 3.6
+    - pexpect
+
