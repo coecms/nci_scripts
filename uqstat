@@ -74,6 +74,9 @@ def qstat_df(historical=False):
 
     j = clean_qstat_json(r.stdout)
     df = pandas.DataFrame.from_dict(j['Jobs'], orient='index')
+    if len(df) == 0:
+        return None
+
     df['stime'] = df.get('stime', pandas.Series(index=df.index, dtype='datetime64[ns]'))
     df['stime'] = pandas.to_datetime(df['stime'])
     df['qtime'] = pandas.to_datetime(df['qtime'])
@@ -89,6 +92,9 @@ def nqstat_df(project):
 
     j = response.json()
     df = pandas.DataFrame(j['qstat'])
+    if len(df) == 0:
+        return None
+
     df = df.set_index('Job_ID')
     df.index.name = None
     df['stime'] = df.get('stime', pandas.Series(index=df.index, dtype='datetime64[ns]'))
@@ -129,6 +135,9 @@ def main():
         df = qstat_df(args.historical)
     else:
         df = nqstat_df(args.project)
+
+    if df is None:
+        return
 
     df['ncpus'] = df.apply(get_list, lst='Resource_List', key='ncpus', axis=1).astype('i')
     df['mem_request'] = df.apply(get_list, lst='Resource_List', key='mem', axis=1).apply(decode_bytes)
