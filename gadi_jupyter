@@ -4,7 +4,7 @@
 
 print_help() {
 cat <<EOF
-Run a Jupyter notebook on Raijin's compute nodes, presenting the interface in a
+Run a Jupyter notebook on Gadi's compute nodes, presenting the interface in a
 browser on the local machine
 
 General Options:
