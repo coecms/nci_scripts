@@ -73,9 +73,11 @@ def qstat_df(historical=False):
     r.check_returncode()
 
     j = clean_qstat_json(r.stdout)
-    df = pandas.DataFrame.from_dict(j['Jobs'], orient='index')
-    if len(df) == 0:
+
+    if len(j['Jobs']) == 0:
         return None
+
+    df = pandas.DataFrame.from_dict(j['Jobs'], orient='index')
 
     df['stime'] = df.get('stime', pandas.Series(index=df.index, dtype='datetime64[ns]'))
     df['stime'] = pandas.to_datetime(df['stime'])
@@ -89,6 +91,7 @@ def nqstat_df(project):
     params = {'project': project}
     
     response = requests.get(url, params=params, headers=headers, timeout=120.0)
+    response.raise_for_status()
 
     j = response.json()
     df = pandas.DataFrame(j['qstat'])
@@ -149,6 +152,7 @@ def main():
     df['mem_pct'] = df['mem_used'] / df['mem_request'] * 100
     df['cpu_pct'] = df['cputime'] / df['walltime'] / df['ncpus'] * 100
     df['state'] = df['job_state']
+    df['stime'] = df['stime'].fillna(pandas.Timestamp.now())
     df['qtime'] = (df['stime'] - df['qtime']).apply(lambda x: x.round('min'))
     df['wall_hours'] = pandas.to_timedelta(df['walltime']).apply(lambda x: x.total_seconds()) / (60*60)
 
@@ -163,8 +167,9 @@ def main():
     df['su'] = df['su'] * df['queue'].apply(lambda x: queue_scale.get(x, 2))
 
     df['user'] = df['Job_Owner'].apply(lambda x: x.split('@')[0])
+    df['name'] = df['Job_Name']
 
-    table =  df[['project','user','Job_Name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
+    table =  df[['project','user','name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
 
     if args.format == 'table':
         pct_format = lambda x: f'{x:.0f}%'
