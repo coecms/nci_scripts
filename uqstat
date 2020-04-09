@@ -74,7 +74,7 @@ def qstat_df(historical=False):
 
     j = clean_qstat_json(r.stdout)
 
-    if len(j['Jobs']) == 0:
+    if 'Jobs' not in j:
         return None
 
     df = pandas.DataFrame.from_dict(j['Jobs'], orient='index')
