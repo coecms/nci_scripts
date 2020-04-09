@@ -79,7 +79,7 @@ while getopts "$optspec" optchar; do
     esac
 done
 
-# This gets evaluated on Raijin in the SSH script
+# This gets evaluated on Gadi in the SSH script
 WORKDIR=\$TMPDIR/runjp
 
 SSH='ssh -oBatchMode=yes'
