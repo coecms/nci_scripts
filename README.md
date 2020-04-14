@@ -27,7 +27,7 @@ conda environment used to spawn the job and NCI username
 Usage:
 ```
 gadi_jupyter -h
-Run a Jupyter notebook on Raijin's compute nodes, presenting the 
+Run a Jupyter notebook on Gadi's compute nodes, presenting the 
 interface in a browser on the local machine
 
 General Options:
