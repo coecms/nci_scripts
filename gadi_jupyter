@@ -28,7 +28,7 @@ set -eu
 
 # Internal defaults
 USER=''
-PROJECT='' # Note- should be the full pbs flag '-P a12' if overriding
+PROJECT=''
 LOGINNODE='gadi.nci.org.au'
 QUEUE='normal'
 NCPUS='1'
@@ -67,7 +67,7 @@ while getopts "$optspec" optchar; do
             JOBFS="${OPTARG}"
             ;;
         P)
-            PROJECT="-P '${OPTARG}'"
+            PROJECT="${OPTARG}"
             ;;
         e)
             CONDA_ENV="${OPTARG}"
@@ -90,7 +90,7 @@ if [ -z "$MEM" ]; then
     MEM="$(( NCPUS * 4 ))gb"
 fi
 
-SUBMITOPTS="-N jupyter-notebook $PROJECT -q '$QUEUE' -l 'ncpus=${NCPUS},mem=${MEM},walltime=${WALLTIME},jobfs=${JOBFS}'"
+SUBMITOPTS="-N jupyter-notebook ${PROJECT:+-P '$PROJECT'} -q '$QUEUE' -l 'ncpus=${NCPUS},mem=${MEM},walltime=${WALLTIME},jobfs=${JOBFS}'"
 
 echo "Starting notebook on ${LOGINNODE}..."
 
