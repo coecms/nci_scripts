@@ -4,7 +4,7 @@
 
 print_help() {
 cat <<EOF
-Run a Jupyter notebook on Raijin's compute nodes, presenting the interface in a
+Run a Jupyter notebook on Gadi's compute nodes, presenting the interface in a
 browser on the local machine
 
 General Options:
@@ -79,7 +79,7 @@ while getopts "$optspec" optchar; do
     esac
 done
 
-# This gets evaluated on Raijin in the SSH script
+# This gets evaluated on Gadi in the SSH script
 WORKDIR=\$TMPDIR/runjp
 
 SSH='ssh -oBatchMode=yes'
