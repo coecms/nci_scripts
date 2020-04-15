@@ -48,7 +48,7 @@ Queue Options:
 You will need to have ssh keys setup for logging into gadi. There is a 
 [guide on how to do this on the CMS Wiki](http://climate-cms.wikis.unsw.edu.au/CLEx_induction#Step_2:_Set_up_your_Connection).
 
-jupyter_vdi.py
+vdi_jupyter.py
 --------------
 
 Run a Jupyter notebook on 
@@ -56,7 +56,7 @@ Run a Jupyter notebook on
 
 To run:
 ```
-python nci_scripts/jupyter_vdi.py
+python nci_scripts/vdi_jupyter.py
 ```
 
 This script requires the `pexpect` package. To make a `conda` environment with the required 
