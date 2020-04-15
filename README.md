@@ -16,7 +16,7 @@ gadi_jupyter
 ------------
 
 Run a Jupyter notebook on Gadi, displaying it in a local web browser 
-(run from your own computer)i.
+(run from your own computer, works on mac/linux/windows (using e.g. [git bash](https://gitforwindows.org/))).
 
 By default the script will spawn a job with a single CPU, 4GB of memory 
 and a walltime of 1 hour.
