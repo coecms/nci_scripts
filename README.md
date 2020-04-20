@@ -43,6 +43,8 @@ Queue Options:
     -t TIME:    Walltime limit (default 1 hour)
     -J JOBFS:   Jobfs allocation (default 100 GB)
     -P PROJ:    Submit job under project PROJ
+    -R RECONNECT: Reconnect to existing job under project PROJ
+                  (Boolean: default True)
 ```
 
 You will need to have ssh keys setup for logging into gadi. There is a 
