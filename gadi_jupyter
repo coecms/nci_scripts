@@ -14,12 +14,13 @@ General Options:
     -e:         Conda environment
 
 Queue Options:
-    -q QUEUE:   Queue name
-    -n NCPU:    Use NCPU cpus
-    -m MEM:     Memory allocation (default 4*NCPU GB)
-    -t TIME:    Walltime limit (default 1 hour)
-    -J JOBFS:   Jobfs allocation (default 100 GB)
-    -P PROJ:    Submit job under project PROJ
+    -q QUEUE:     Queue name
+    -n NCPU:      Use NCPU cpus
+    -m MEM:       Memory allocation (default 4*NCPU GB)
+    -t TIME:      Walltime limit (default 1 hour)
+    -J JOBFS:     Jobfs allocation (default 100 GB)
+    -P PROJ:      Submit job under project PROJ
+    -R RECONNECT: Reconnect to existing job under project PROJ (default True)
 
 EOF
 }
@@ -36,6 +37,7 @@ MEM=''
 WALLTIME=1:00:00
 JOBFS=100gb
 CONDA_ENV=analysis3-20.01
+RECONNECT=True
 
 # Handle arguments
 optspec="hl:L:q:n:m:t:J:P:e:"
@@ -72,6 +74,8 @@ while getopts "$optspec" optchar; do
         e)
             CONDA_ENV="${OPTARG}"
             ;;
+	R)  RECONNECT="${OPTARG}"
+            ;;
         *)
             print_help
             exit 2
@@ -102,6 +106,36 @@ echo "qsub ${SUBMITOPTS}"
 # Kill the job if this top-level script is cancelled while the job is still in the queue
 trap "{ echo 'Stopping queued job... (Ctrl-C will leave job in the queue)' ; $SSH \"$LOGINNODE\" <<< \"qdel \\\$(cat \\$WORKDIR/jobid)\" ; }" EXIT
 
+if $RECONNECT; then
+
+message=$(
+$SSH -q "$LOGINNODE" <<EOF | tail -n 1
+# Look for processes titled jupyter-notebook. 
+processes=(\$(/g/data/hh5/public/apps/nci_scripts/uqstat -f csv  | grep jupyter-notebook | sed 's/,/\n/g'))
+if [[ -n \$processes ]];
+then
+    set -eu
+    # Count number of jupyter-notebook sessions.
+    repeat=(\$( echo \${processes[@]} | tr " " "\n" | sort | uniq -c | sort -k2nr | grep jupyter-notebook | sed -e 's/^ *//g' | tr " " "\n" ))
+    # TO DO: Perhaps join all sessions or kill all processes. ATM, it wont connect.
+    if [[ \$repeat != "1" ]]; 
+    then
+        echo "There are several sessions running"; 
+    else
+        # Extract process information
+        qcat \${processes[0]} | head -n 1
+    fi
+else
+    # If job doesn't exist then the message is overwritten
+    echo "New Job"
+fi
+EOF
+)
+fi
+
+if [[ ! $RECONNECT ]] || [[ $message == "New Job" ]]
+then
+
 message=$(
 $SSH -q "$LOGINNODE" <<EOF | tail -n 1
 
@@ -130,7 +164,6 @@ PORT=\\\$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.
 # Write message file with info for the local connection
 echo "\\\$HOSTNAME \\\$TOKEN \\\$PBS_JOBID \\\$PORT" > "\$WORKDIR/message"
 
-echo "runjp log dir \$WORKDIR"
 cat "\$WORKDIR/message"
 
 export DASK_LABEXTENSION__FACTORY__MODULE=dask.distributed
@@ -160,6 +193,7 @@ done
 cat "\$WORKDIR/message"
 EOF
 )
+fi
 
 echo "Remote Message: '$message'"
 
