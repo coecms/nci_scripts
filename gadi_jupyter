@@ -40,7 +40,7 @@ CONDA_ENV=analysis3-20.01
 RECONNECT=True
 
 # Handle arguments
-optspec="hl:L:q:n:m:t:J:P:e:"
+optspec="hl:L:q:n:m:t:J:P:e:R:"
 while getopts "$optspec" optchar; do
     case "${optchar}" in
         h)
@@ -96,8 +96,6 @@ fi
 
 SUBMITOPTS="-N jupyter-notebook ${PROJECT:+-P '$PROJECT'} -q '$QUEUE' -l 'ncpus=${NCPUS},mem=${MEM},walltime=${WALLTIME},jobfs=${JOBFS}'"
 
-echo "Starting notebook on ${LOGINNODE}..."
-
 # Check connection
 $SSH "$LOGINNODE" true
 
@@ -110,17 +108,20 @@ if $RECONNECT; then
 
 message=$(
 $SSH -q "$LOGINNODE" <<EOF | tail -n 1
+PROJECT="$PROJECT"
 # Look for processes titled jupyter-notebook. 
-processes=(\$(/g/data/hh5/public/apps/nci_scripts/uqstat -f csv  | grep jupyter-notebook | sed 's/,/\n/g'))
+processes=(\$(/g/data/hh5/public/apps/nci_scripts/uqstat -f csv  | grep jupyter-notebook | grep \$PROJECT | sed 's/,/\n/g'))
 if [[ -n \$processes ]];
 then
     set -eu
     # Count number of jupyter-notebook sessions.
     repeat=(\$( echo \${processes[@]} | tr " " "\n" | sort | uniq -c | sort -k2nr | grep jupyter-notebook | sed -e 's/^ *//g' | tr " " "\n" ))
-    # TO DO: Perhaps join all sessions or kill all processes. ATM, it wont connect.
+    # TO DO: Perhaps join all sessions or kill all processes. ATM, it will connect 
+    # to first session.
     if [[ \$repeat != "1" ]]; 
     then
         echo "There are several sessions running"; 
+        qcat \${processes[0]} | head -n 1
     else
         # Extract process information
         qcat \${processes[0]} | head -n 1
@@ -131,10 +132,14 @@ else
 fi
 EOF
 )
+else
+    message="New Job"
 fi
 
 if [[ ! $RECONNECT ]] || [[ $message == "New Job" ]]
 then
+
+echo "Starting notebook on ${LOGINNODE}..."
 
 message=$(
 $SSH -q "$LOGINNODE" <<EOF | tail -n 1
@@ -193,6 +198,8 @@ done
 cat "\$WORKDIR/message"
 EOF
 )
+else
+echo "Reconnecting to notebook on ${LOGINNODE}..."
 fi
 
 echo "Remote Message: '$message'"
