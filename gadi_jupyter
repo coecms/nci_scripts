@@ -80,7 +80,7 @@ while getopts "$optspec" optchar; do
 done
 
 # This gets evaluated on Gadi in the SSH script
-WORKDIR=\$TMPDIR/runjp
+WORKDIR=/scratch/${PROJECT:-\$PROJECT}/\$USER/tmp/runjp
 
 SSH='ssh -oBatchMode=yes'
 if [ -n "$USER" ]; then
@@ -109,6 +109,13 @@ set -eu
 
 WORKDIR="$WORKDIR"
 mkdir -p "\$WORKDIR"
+
+# Check if already running
+if qstat $(cat "\$WORKDIR/jobid); then
+    cat "\$WORKDIR/message"
+    exit
+fi
+
 rm -f "\$WORKDIR/message"
 
 cat > "\$WORKDIR/runjp.sh" <<EOQ
