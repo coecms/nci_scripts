@@ -111,7 +111,10 @@ WORKDIR="$WORKDIR"
 mkdir -p "\$WORKDIR"
 
 # Check if already running
-if qstat $(cat "\$WORKDIR/jobid); then
+if [ -f "\$WORKDIR/jobid" ] && qstat \$(cat "\$WORKDIR/jobid") &> /dev/null; then
+    while [ ! -f "\$WORKDIR/message" ]; do
+        sleep 5
+    done
     cat "\$WORKDIR/message"
     exit
 fi
