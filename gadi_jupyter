@@ -124,7 +124,7 @@ if [ -f "\$WORKDIR/jobid" ] && qstat \$(cat "\$WORKDIR/jobid") &> /dev/null; the
     while [ ! -f "\$WORKDIR/message" ]; do
         sleep 5
     done
-    cat "\$WORKDIR/message"
+    cat "\$WORKDIR/message" | sed 's/$/ RECONNECT/'
     exit
 fi
 
@@ -176,7 +176,7 @@ qsub $SUBMITOPTS -l "storage=\$storage" -j oe -o "\$WORKDIR/pbs.log" "\$WORKDIR/
 while [ ! -f "\$WORKDIR/message" ]; do
     sleep 5
 done
-cat "\$WORKDIR/message"
+cat "\$WORKDIR/message" | sed 's/$/ NEW/'
 EOF
 )
 
@@ -185,7 +185,12 @@ if [ -n "$DEBUG" ]; then
 fi
 
 # Grab info from the PBS job
-read jobhost token jobid remote_port <<< "$message"
+read jobhost token jobid remote_port type <<< "$message"
+
+if [ "$type" = "RECONNECT" ]; then
+    echo
+    echo "Existing jupyterlab found, reconnecting to that instead"
+fi
 
 # Find a local port
 for local_port in {8888..9000}; do
