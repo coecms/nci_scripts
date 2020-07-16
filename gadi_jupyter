@@ -120,7 +120,7 @@ WORKDIR="$WORKDIR"
 mkdir -p "\$WORKDIR"
 
 # Check if already running
-if [ -f "\$WORKDIR/jobid" ] && qstat \$(cat "\$WORKDIR/jobid") &> /dev/null; then
+if [ -f "\$WORKDIR/jobid" ] && [ "\$(qstat -x \$(cat "\$WORKDIR/jobid") | sed -n '\$s/.*\([QR]\)\s\+\(\S\+\)\s*$/\1/p')" ] ; then
     while [ ! -f "\$WORKDIR/message" ]; do
         sleep 5
     done
