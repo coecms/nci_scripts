@@ -87,6 +87,21 @@ done
 # This gets evaluated on Gadi in the SSH script
 WORKDIR=/scratch/${PROJECT:-\$PROJECT}/\$USER/tmp/runjp
 
+# Check for agent
+set +e
+ssh-add -l &> /dev/null
+AGENT=$?
+set -e
+if [ $AGENT -eq 2 ]; then
+    # Restart with an agent
+    ssh-agent "$0" "$@"
+    exit
+fi
+if [ $AGENT -eq 1 ]; then
+    # No keys saved
+    ssh-add
+fi
+
 SSH='ssh -oBatchMode=yes'
 if [ -n "$USER" ]; then
     SSH="${SSH} -l ${USER}"
