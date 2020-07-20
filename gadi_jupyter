@@ -170,7 +170,7 @@ for p in \$(id -nG); do
     if [ -d "/g/data/\$p" ]; then storage="gdata/\$p+\$storage"; fi
 done
 
-qsub $SUBMITOPTS -l "storage=\$storage" -j oe -o "\$WORKDIR/pbs.log" "\$WORKDIR/runjp.sh" > "\$WORKDIR/jobid"
+qsub $SUBMITOPTS -W umask=0022 -l "storage=\$storage" -j oe -o "\$WORKDIR/pbs.log" "\$WORKDIR/runjp.sh" > "\$WORKDIR/jobid"
 
 # Wait for the message file to appear, then return to the local process
 while [ ! -f "\$WORKDIR/message" ]; do
