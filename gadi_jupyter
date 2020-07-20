@@ -119,6 +119,13 @@ set -eu
 WORKDIR="$WORKDIR"
 mkdir -p "\$WORKDIR"
 
+# Check if a hh5 member
+if [ ! -d /g/data/hh5 ]; then
+    echo "ERROR: \$USER is not a member of hh5. Join at https://my.nci.org.au/mancini/project/hh5/join" >&2
+    echo "x x x x ERROR"
+    exit
+fi
+
 # Check if already running
 if [ -f "\$WORKDIR/jobid" ] && [ "\$(qstat -x \$(cat "\$WORKDIR/jobid") | sed -n '\$s/.*\([QR]\)\s\+\(\S\+\)\s*$/\1/p')" ] ; then
     while [ ! -f "\$WORKDIR/message" ]; do
@@ -187,6 +194,11 @@ fi
 # Grab info from the PBS job
 read jobhost token jobid remote_port type <<< "$message"
 
+if [ "$type" = "ERROR" ]; then
+    echo
+    echo "Stopping due to error"
+    exit
+fi
 if [ "$type" = "RECONNECT" ]; then
     echo
     echo "Existing jupyterlab found, reconnecting to that instead"
