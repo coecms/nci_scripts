@@ -114,7 +114,7 @@ if [ $NCPUS -gt 48 ]; then
     echo "WARNING: Using more than one node with Dask needs extra setup and is not supported by this script"
 fi
 
-SUBMITOPTS="-N jupyter-notebook ${PROJECT:+-P '$PROJECT'} -q '$QUEUE' -l 'ncpus=${NCPUS},mem=${MEM},walltime=${WALLTIME},jobfs=${JOBFS}'"
+SUBMITOPTS="-N jupyter-lab ${PROJECT:+-P '$PROJECT'} -q '$QUEUE' -l 'ncpus=${NCPUS},mem=${MEM},walltime=${WALLTIME},jobfs=${JOBFS}'"
 
 echo "Starting notebook on ${LOGINNODE}..."
 
@@ -142,7 +142,7 @@ if [ ! -d /g/data/hh5 ]; then
 fi
 
 # Check if already running
-if [ -f "\$WORKDIR/jobid" ] && [ "\$(qstat -x \$(cat "\$WORKDIR/jobid") | sed -n '\$s/.*\([QR]\)\s\+\(\S\+\)\s*$/\1/p')" ] ; then
+if [ -f "\$WORKDIR/jobid" ] && [ "\$(qstat -x \$(cat "\$WORKDIR/jobid") | sed -n '\$s/\S\+\s\+jupyter-lab\s.*\s[QR]\s\+\S\+\s*$/\0/p')" ] ; then
     while [ ! -f "\$WORKDIR/message" ]; do
         sleep 5
     done
