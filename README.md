@@ -70,6 +70,11 @@ conda activate jupyter_vdi
 ```
 and run the script as above.
 
+
+**Note for Windows Users:**
+The `pexpect` package for Windows doesn't have the required functionality for running this script, so running the script will return an error. If you have Windows 10, you can [install the Windows Subsystem for Linux (WSL or WSL 2)](https://docs.microsoft.com/en-us/windows/wsl/install-win10) allowing you to set up a Linux environment on your Windows machine in which it will run.
+
+
 qsubs
 -----
 
