@@ -36,7 +36,7 @@ NCPUS='1'
 MEM=''
 WALLTIME=1:00:00
 JOBFS=100gb
-CONDA_ENV=analysis3-20.04
+CONDA_ENV=analysis3-20.07
 DEBUG=""
 
 # Handle arguments
@@ -117,6 +117,9 @@ fi
 SUBMITOPTS="-N jupyter-lab ${PROJECT:+-P '$PROJECT'} -q '$QUEUE' -l 'ncpus=${NCPUS},mem=${MEM},walltime=${WALLTIME},jobfs=${JOBFS}'"
 
 echo "Starting notebook on ${LOGINNODE}..."
+if [ -n "$DEBUG" ]; then
+    echo "DEBUG: Connecting using: '$SSH $LOGINNODE'"
+fi
 
 # Check connection
 $SSH "$LOGINNODE" true
