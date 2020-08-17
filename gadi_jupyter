@@ -33,7 +33,6 @@ PROJECT=''
 LOGINNODE='gadi.nci.org.au'
 QUEUE='normal'
 NCPUS='1'
-MEM=''
 WALLTIME=1:00:00
 JOBFS=100gb
 CONDA_ENV=analysis3-20.07
@@ -58,9 +57,6 @@ while getopts "$optspec" optchar; do
             ;;
         n)
             NCPUS="${OPTARG}"
-            ;;
-        m)
-            MEM="${OPTARG}"
             ;;
         t)
             WALLTIME="${OPTARG}"
@@ -106,15 +102,20 @@ SSH='ssh -oBatchMode=yes'
 if [ -n "$USER" ]; then
     SSH="${SSH} -l ${USER}"
 fi
-if [ -z "$MEM" ]; then
-    MEM="$(( NCPUS * 4 ))gb"
-fi
 
 if [ $NCPUS -gt 48 ]; then
     echo "WARNING: Using more than one node with Dask needs extra setup and is not supported by this script"
 fi
+if [ $NCPUS -gt 8 ]; then
+    echo "WARNING: Using a large number of CPUs in an interactive session can waste lots of NCI compute time. Try keeping the number of CPUs under 8."
+    read -p "Proceed? [y/N] " -n 1 cpu_confirm
+    echo
+    if [[ ! "$cpu_confirm" =~ ^[Yy]$ ]]; then
+        exit
+    fi
+fi
 
-SUBMITOPTS="-N jupyter-lab ${PROJECT:+-P '$PROJECT'} -q '$QUEUE' -l 'ncpus=${NCPUS},mem=${MEM},walltime=${WALLTIME},jobfs=${JOBFS}'"
+SUBMITOPTS="-N jupyter-lab ${PROJECT:+-P '$PROJECT'} -q '$QUEUE' -l 'ncpus=${NCPUS},mem=$(( NCPUS * 4 ))gb,walltime=${WALLTIME},jobfs=${JOBFS}'"
 
 echo "Starting notebook on ${LOGINNODE}..."
 if [ -n "$DEBUG" ]; then
