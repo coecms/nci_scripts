@@ -31,7 +31,7 @@ set -eu
 USER=''
 PROJECT=''
 LOGINNODE='gadi.nci.org.au'
-QUEUE='normal'
+QUEUE='normalbw'
 NCPUS='1'
 WALLTIME=1:00:00
 JOBFS=100gb
