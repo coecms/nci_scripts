@@ -2,7 +2,7 @@
 
 # Always the current stable analysis3 python
 
-module use /g/data3/hh5/public/modules
-module load conda/analysis3
+eval $(/opt/Modules/v4.3.0/libexec/modulecmd.tcl sh use /g/data3/hh5/public/modules)
+eval $(/opt/Modules/v4.3.0/libexec/modulecmd.tcl sh load conda/analysis3)
 
 python "$@"
