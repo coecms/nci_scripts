@@ -35,6 +35,7 @@ QUEUE='normalbw'
 NCPUS='1'
 WALLTIME=1:00:00
 JOBFS=100gb
+MEM=''
 CONDA_ENV=analysis3-20.07
 DEBUG=""
 
@@ -63,6 +64,9 @@ while getopts "$optspec" optchar; do
             ;;
         J)
             JOBFS="${OPTARG}"
+            ;;
+        m)
+            MEM="${OPTARG}"
             ;;
         P)
             PROJECT="${OPTARG}"
@@ -114,8 +118,14 @@ if [ $NCPUS -gt 8 ]; then
         exit
     fi
 fi
+if [ -z "$MEM" ]; then
+    MEM_PER_CPU=4
 
-SUBMITOPTS="-N jupyter-lab ${PROJECT:+-P '$PROJECT'} -q '$QUEUE' -l 'ncpus=${NCPUS},mem=$(( NCPUS * 4 ))gb,walltime=${WALLTIME},jobfs=${JOBFS}'"
+
+    MEM="$(( NCPUS * MEM_PER_CPU ))gb"
+fi
+
+SUBMITOPTS="-N jupyter-lab ${PROJECT:+-P '$PROJECT'} -q '$QUEUE' -l 'ncpus=${NCPUS},mem=${MEM},walltime=${WALLTIME},jobfs=${JOBFS}'"
 
 echo "Starting notebook on ${LOGINNODE}..."
 if [ -n "$DEBUG" ]; then

@@ -223,7 +223,7 @@ def main(args):
 
     setupconda = params.get('setupconda',
               """module use /g/data3/hh5/public/modules
-                 && module load conda/analysis3
+                 && module load conda/analysis3-unstable
               """.replace('\n', ' '))
 
     jupyterapp = params.get('jupyterapp',  "notebook")
