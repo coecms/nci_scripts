@@ -56,8 +56,8 @@ def clean_qstat_json(stream):
     for line in stream.splitlines():
         match = string_entry_re.match(line)
         if match is not None:
-            fixed_value = match.group('value').replace('"', '\\"')
-            line = f'"{match.group("key")}":"{fixed_value}"{match.group("comma")}'
+            fixed_value = json.dumps(match.group('value'))
+            line = f'"{match.group("key")}":{fixed_value}{match.group("comma")}'
 
         lines.append(line)
 
