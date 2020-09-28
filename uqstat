@@ -9,6 +9,34 @@ import sys
 import pymunge
 import requests
 
+# Base charge rates in SU/hour for 1 cpu with minimal memory
+charge_rates = {
+    'express': 6,
+    'normal': 2,
+    'copyq': 2,
+    'hugemem': 3,
+    'gpuvolta': 3,
+    'hugemembw': 1.25,
+    'megamembw': 1.25,
+    'expresswb': 3.75,
+    'normalbw': 1.25,
+    'normalsl': 1.5,
+}
+
+# Expected memory, in GB per CPU
+base_mem = {
+    'express': 4,
+    'normal': 4,
+    'copyq': 4,
+    'hugemem': 32,
+    'gpuvolta': 8,
+    'hugemembw': 1024/28,
+    'megamembw': 3072/32,
+    'expressbw': 128/28,
+    'normalbw': 128/28,
+    'normalsl': 192/32,
+    }
+
 def decode_bytes(s):
     if pandas.isnull(s):
         return s
@@ -142,6 +170,8 @@ def main():
     if df is None:
         return
 
+    df['queue'] = df['queue'].apply(lambda x: x[:-5] if x.endswith('-exec') else x)
+
     df['ncpus'] = df.apply(get_list, lst='Resource_List', key='ncpus', axis=1).astype('i')
     df['mem_request'] = df.apply(get_list, lst='Resource_List', key='mem', axis=1).apply(decode_bytes)
 
@@ -157,19 +187,21 @@ def main():
     df['wall_hours'] = pandas.to_timedelta(df['walltime']).apply(lambda x: x.total_seconds()) / (60*60)
 
     # The number of cpus this would use based on the memory request
-    queue_mem = {'hugemem-exec': 32}
-    df['ncpus_by_mem'] = df['mem_request'] / (df['queue'].apply(lambda x: queue_mem.get(x, 4)) * 1024**3)
+    df['ncpus_by_mem'] = df['mem_request'] / (df['queue'].apply(lambda x: base_mem.get(x, 4)) * 1024**3)
 
     # Multiply the larger of ncpus, ncpus_by_mem by the walltime
-    df['su'] = df['ncpus'].where(df['ncpus'] > df['ncpus_by_mem'], df['ncpus_by_mem']) * df['wall_hours']
+    df['charge_rate'] = df['ncpus'].where(df['ncpus'] > df['ncpus_by_mem'], df['ncpus_by_mem'])
 
-    queue_scale = {'express-exec': 6, 'hugemem-exec': 3}
-    df['su'] = df['su'] * df['queue'].apply(lambda x: queue_scale.get(x, 2))
+    df['charge_rate'] = df['charge_rate'] * df['queue'].apply(lambda x: charge_rates.get(x, 2))
+
+    df['su'] = df['charge_rate'] * df['wall_hours']
 
     df['user'] = df['Job_Owner'].apply(lambda x: x.split('@')[0])
     df['name'] = df['Job_Name']
 
     table =  df[['project','user','name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
+
+    adv_table = table.join(df[['charge_rate','ncpus_by_mem','mem_request','mem_used']])
 
     if args.format == 'table':
         pct_format = lambda x: f'{x:.0f}%'
@@ -177,9 +209,9 @@ def main():
         table.to_string(sys.stdout, formatters={'su': round_format, 'mem_pct': pct_format, 'cpu_pct': pct_format})
         print()
     elif args.format == 'csv':
-        table.to_csv(sys.stdout, index_label='jobid')
+        adv_table.to_csv(sys.stdout, index_label='jobid')
     elif args.format == 'json':
-        table.to_json(sys.stdout, orient='index', indent=4, date_unit='s')
+        adv_table.to_json(sys.stdout, orient='index', indent=4, date_unit='s')
     else:
         raise NotImplementedError
 
