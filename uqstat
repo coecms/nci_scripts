@@ -1,4 +1,4 @@
-#!/g/data3/hh5/public/apps/miniconda3/envs/analysis3-20.01/bin/python
+#!/g/data3/hh5/public/apps/nci_scripts/python-analysis3
 
 import pandas
 import subprocess
