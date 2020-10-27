@@ -160,6 +160,7 @@ def main():
     parser.add_argument('--historical','-x', help='Show historical info', action='store_true')
     parser.add_argument('--format','-f', help='Output format', choices=['table','csv','json'], default='table')
     parser.add_argument('--project','-P', help='Show all jobs in a project')
+    parser.add_argument('--comment','-c', help='Show PBS queue comment', action='store_true')
     args = parser.parse_args()
 
     if args.project is None:
@@ -200,6 +201,9 @@ def main():
     df['name'] = df['Job_Name']
 
     table =  df[['project','user','name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
+
+    if args.comment:
+        table = table.join(df['comment'])
 
     adv_table = table.join(df[['charge_rate','ncpus_by_mem','mem_request','mem_used']])
 
