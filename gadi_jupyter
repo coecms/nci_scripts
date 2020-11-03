@@ -273,15 +273,21 @@ EOF
 
 set +e
 if which xdg-open > /dev/null; then
+    # Linux
     xdg-open "$URL"
 elif which open > /dev/null; then
+    # OSX
     open "$URL"
 elif which explorer > /dev/null; then
+    # Windows
     explorer "$URL"
+elif [ -n "$WSLENV" ]; then
+    # Windows subsystem for linux
+    /mnt/c/Windows/system32/cmd.exe /c start "$URL"
 else
     echo
     echo "----"
-    echo "Notebook available at $URL"
+    echo "Can't find a way to open the URL automatically, please copy the URL above into your browser"
 fi
 set -e
 
