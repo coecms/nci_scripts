@@ -3,6 +3,7 @@
 # Always the current stable analysis3 python
 
 eval $(/opt/Modules/v4.3.0/libexec/modulecmd.tcl sh use /g/data3/hh5/public/modules)
+eval $(/opt/Modules/v4.3.0/libexec/modulecmd.tcl sh remove conda)
 eval $(/opt/Modules/v4.3.0/libexec/modulecmd.tcl sh load conda/analysis3)
 
 python "$@"
