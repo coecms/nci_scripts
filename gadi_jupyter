@@ -272,7 +272,10 @@ Opening ${URL}
 EOF
 
 set +e
-if which xdg-open > /dev/null; then
+if [ -n "$WSLENV" ]; then
+    # Windows subsystem for linux
+    /mnt/c/Windows/system32/cmd.exe /c start "$URL"
+elif which xdg-open > /dev/null; then
     # Linux
     xdg-open "$URL"
 elif which open > /dev/null; then
@@ -281,9 +284,6 @@ elif which open > /dev/null; then
 elif which explorer > /dev/null; then
     # Windows
     explorer "$URL"
-elif [ -n "$WSLENV" ]; then
-    # Windows subsystem for linux
-    /mnt/c/Windows/system32/cmd.exe /c start "$URL"
 else
     echo
     echo "----"
