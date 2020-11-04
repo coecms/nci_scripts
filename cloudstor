@@ -3,14 +3,28 @@
 import subprocess
 import argparse
 import os
+import xml.etree.ElementTree as ET
 
 user = None
 token = None
 
+
+class DAVException(Exception):
+    pass
+
+
 def curl_command(cmd, target):
     r = subprocess.run(['curl', '-u', f'{user}:{token}', *cmd, f'https://cloudstor.aarnet.edu.au/plus/remote.php/webdav/{target}'], stdout=subprocess.PIPE)
     r.check_returncode()
-    return r.stdout
+
+    if len(r.stdout) == 0:
+        return None
+
+    root = ET.fromstring(r.stdout)
+    if root.tag == '{DAV:}error':
+        raise DAVException(root.find('{http://sabredav.org/ns}message').text + ': ' + target)
+
+    return root
 
 
 def put(path, target, recursive=False):
