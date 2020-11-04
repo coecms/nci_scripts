@@ -1,0 +1,83 @@
+#!/usr/bin/python3
+
+import subprocess
+import argparse
+import os
+
+user = None
+token = None
+
+def curl_command(cmd, target):
+    r = subprocess.run(['curl', '-u', f'{user}:{token}', *cmd, f'https://cloudstor.aarnet.edu.au/plus/remote.php/webdav/{target}'], stdout=subprocess.PIPE)
+    r.check_returncode()
+    return r.stdout
+
+
+def put(path, target, recursive=False):
+    """
+    Upload file at 'path' to 'target'
+    """
+    if recursive:
+        put_recursive(path, target)
+    else:
+        if os.path.isdir(path):
+            raise Exception(f"Can't put directory {path} (try -r)")
+
+        print("PUT",path,target)
+        curl_command(['-T',path], target)
+
+
+def mkdir(target):
+    """
+    Make a directory 'target'
+    """
+    print("MKDIR",target)
+    curl_command(['-X','MKCOL'], target)
+
+
+def put_recursive(path, target):
+    """
+    Upload the directory tree starting at 'path' to target
+    """
+    mkdir(f"{target}")
+
+    for root, dirs, files in os.walk(path):
+        t = root[len(path):]
+        for d in dirs:
+            mkdir(f"{target}/{t}/{d}")
+        for f in files:
+            put(f"{root}/{f}",f"{target}/{t}/{f}")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--user','-u', required=True)
+    parser.add_argument('--token','-t', required=True)
+
+    subp = parser.add_subparsers(metavar="COMMAND")
+
+    sub_put = subp.add_parser('put', help="Upload files")
+    sub_put.add_argument("--recursive", "-r", action='store_true')
+    sub_put.add_argument("path")
+    sub_put.add_argument("target")
+    sub_put.set_defaults(func=put)
+
+    sub_mkdir = subp.add_parser('mkdir', help="Make directory")
+    sub_mkdir.add_argument("target")
+    sub_mkdir.set_defaults(func=put)
+
+    args = parser.parse_args()
+
+    global user, token
+    args = vars(args)
+
+    user = args.pop('user')
+    token = args.pop('token')
+
+    func = args.pop('func')
+
+    func(**args)
+
+
+if __name__ == '__main__':
+    main()

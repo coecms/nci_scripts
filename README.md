@@ -79,3 +79,9 @@ qsubs
 -----
 
 `qsub` but it requests all of the `-l storage=` options for projects you're a member of
+
+
+cloudstor
+---------
+
+Upload data to https://cloudstor.aarnet.edu.au
