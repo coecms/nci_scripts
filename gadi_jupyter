@@ -272,7 +272,7 @@ Opening ${URL}
 EOF
 
 set +e
-if [ -n "$WSLENV" ]; then
+if [ -n "${WSLENV:-}" ]; then
     # Windows subsystem for linux
     /mnt/c/Windows/system32/cmd.exe /c start "$URL"
 elif which xdg-open > /dev/null; then
