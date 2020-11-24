@@ -22,6 +22,7 @@ Queue Options:
     -J JOBFS:   Jobfs allocation (default 100 GB)
     -P PROJ:    Submit job under project PROJ
     -s STORAGE: PBS Storage flags (e.g. 'scratch/w35+gdata/v45')
+                If not specified, all available storage is requested
 
 EOF
 }
