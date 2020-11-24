@@ -27,14 +27,23 @@ conda environment used to spawn the job and NCI username
 Usage:
 ```
 gadi_jupyter -h
-Run a Jupyter notebook on Gadi's compute nodes, presenting the 
-interface in a browser on the local machine
+
+Run a Jupyter notebook on Gadi's compute nodes, presenting the interface in a
+browser on the local machine
+
+You can set a default username in your local ~/.ssh/config, e.g.
+
+    Host gadi.nci.org.au
+    User abc123
+
+Your default project is set in the file on Gadi ~/.config/gadi-login.conf
 
 General Options:
     -h:         Print help
-    -l:         NCI username
-    -L:         NCI login node (default 'gadi.nci.org.au')
-    -e:         Conda environment
+    -l USER:    NCI username
+    -L HOST:    NCI login node (default 'gadi.nci.org.au')
+    -e ENVIRON: Conda environment
+    -d:         Debug mode
 
 Queue Options:
     -q QUEUE:   Queue name
@@ -43,6 +52,9 @@ Queue Options:
     -t TIME:    Walltime limit (default 1 hour)
     -J JOBFS:   Jobfs allocation (default 100 GB)
     -P PROJ:    Submit job under project PROJ
+    -s STORAGE: PBS Storage flags (e.g. 'scratch/w35+gdata/v45')
+                If not specified, all available storage is requested
+
 ```
 
 You will need to have ssh keys setup for logging into gadi. There is a 
