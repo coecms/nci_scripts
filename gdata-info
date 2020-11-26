@@ -31,7 +31,13 @@ while getopts "$optspec" optchar; do
             avail=$(grep "^$MOUNT\s" <<< "$mount_info" | cut -f 2 -d ' ')
             member=$(id -Gn | tr ' ' '\n')
 
-            sort <<< "$avail\n$member" | uniq -c | sed -n 's/^\s*2\s\(\S\+\)$/\1/p'
+            both=$(cat <<EOF
+$avail
+$member
+EOF
+)
+
+            sort <<< "$both" | uniq -c | sed -n 's/^\s*2\s\(\S\+\)$/\1/p'
             ;;
         M)
             cut -f 1 -d ' ' <<< "$mount_info" | sort -u
