@@ -4,14 +4,22 @@
 
 print_help() {
 cat <<EOF
+
 Run a Jupyter notebook on Gadi's compute nodes, presenting the interface in a
 browser on the local machine
 
+You can set a default username in your local ~/.ssh/config, e.g.
+
+    Host gadi.nci.org.au
+    User abc123
+
+Your default project is set in the file on Gadi ~/.config/gadi-login.conf
+
 General Options:
     -h:         Print help
-    -l:         NCI username
-    -L:         NCI login node (default 'gadi.nci.org.au')
-    -e:         Conda environment
+    -l USER:    NCI username
+    -L HOST:    NCI login node (default 'gadi.nci.org.au')
+    -e ENVIRON: Conda environment 
     -d:         Debug mode
 
 Queue Options:
@@ -21,6 +29,8 @@ Queue Options:
     -t TIME:    Walltime limit (default 1 hour)
     -J JOBFS:   Jobfs allocation (default 100 GB)
     -P PROJ:    Submit job under project PROJ
+    -s STORAGE: PBS Storage flags (e.g. 'scratch/w35+gdata/v45')
+                If not specified, all available storage is requested
 
 EOF
 }
@@ -38,9 +48,10 @@ JOBFS=100gb
 MEM=''
 CONDA_ENV=analysis3-20.07
 DEBUG=""
+STORAGE=""
 
 # Handle arguments
-optspec="hl:L:q:n:m:t:J:P:e:d"
+optspec="hl:L:q:n:m:t:J:P:e:ds:"
 while getopts "$optspec" optchar; do
     case "${optchar}" in
         h)
@@ -73,6 +84,9 @@ while getopts "$optspec" optchar; do
             ;;
         e)
             CONDA_ENV="${OPTARG}"
+            ;;
+        s)
+            STORAGE="${OPTARG}"
             ;;
         d)
             DEBUG=true
@@ -198,13 +212,19 @@ export DASK_DISTRIBUTED__DASHBOARD__LINK="/proxy/{port}/status"
 jupyter notebook --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
 EOQ
 
+# Required for conda
 storage="gdata/hh5"
-for p in \$(id -nG); do
-    if [ \$p = "access.dev" ]; then continue; fi
-    if [ \$p = "access.admin" ]; then continue; fi
-    if [ -d "/scratch/\$p" ]; then storage="scratch/\$p+\$storage"; fi
-    if [ -d "/g/data/\$p" ]; then storage="gdata/\$p+\$storage"; fi
-done
+
+if [ -n "$STORAGE" ]; then
+    storage="$STORAGE+\$storage"
+else
+    for p in \$(id -nG); do
+        if [ \$p = "access.dev" ]; then continue; fi
+        if [ \$p = "access.admin" ]; then continue; fi
+        if [ -d "/scratch/\$p" ]; then storage="scratch/\$p+\$storage"; fi
+        if [ -d "/g/data/\$p" ]; then storage="gdata/\$p+\$storage"; fi
+    done
+fi
 
 qsub $SUBMITOPTS -W umask=0022 -l "storage=\$storage" -j oe -o "\$WORKDIR/pbs.log" "\$WORKDIR/runjp.sh" > "\$WORKDIR/jobid"
 
@@ -272,7 +292,7 @@ Opening ${URL}
 EOF
 
 set +e
-if [ -n "$WSLENV" ]; then
+if [ -n "${WSLENV:-}" ]; then
     # Windows subsystem for linux
     /mnt/c/Windows/system32/cmd.exe /c start "$URL"
 elif which xdg-open > /dev/null; then
