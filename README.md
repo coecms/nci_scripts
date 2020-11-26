@@ -85,3 +85,24 @@ cloudstor
 ---------
 
 Upload data to https://cloudstor.aarnet.edu.au
+
+gdata-info
+----------
+
+Information about what projects are on which NCI Gdata mount
+
+Available projects on gdata1a:
+```
+$ gdata-info -m gdata1a
+e14
+ks32
+p66
+p73
+rr3
+```
+
+The gdata system for project e14:
+```
+$ gdata-info -P e14
+gdata1a
+```

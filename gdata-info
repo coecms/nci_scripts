@@ -1,0 +1,46 @@
+#!/bin/bash
+
+set -e
+
+print_help() {
+cat <<EOF
+Print information about gdata mounts
+
+Options:
+    -P PROJ     Mount point of project PROJ
+    -m MOUNT    Projects stored on MOUNT
+    -M          List all available MOUNTs
+EOF
+}
+
+mount_info=$(mount | sed -n 's|.*:/\(gdata\S\+\) on /g/data/\(\S\+\) type lustre.*|\1 \2|p' | sort) 
+
+optspec="hP:m:M"
+while getopts "$optspec" optchar; do
+    case "${optchar}" in
+        h)
+            print_help
+            exit 2
+            ;;
+        P)
+            PROJ="${OPTARG}"
+            grep "\s$PROJ\$" <<< "$mount_info" | cut -f 1 -d ' '
+            ;;
+        m)
+            MOUNT="${OPTARG}"
+            avail=$(grep "^$MOUNT\s" <<< "$mount_info" | cut -f 2 -d ' ')
+            member=$(id -Gn | tr ' ' '\n')
+
+            sort <<< "$avail\n$member" | uniq -c | sed -n 's/^\s*2\s\(\S\+\)$/\1/p'
+            ;;
+        M)
+            cut -f 1 -d ' ' <<< "$mount_info" | sort -u
+            ;;
+        *)
+            print_help
+            exit 2
+            ;;
+    esac
+done
+
+
