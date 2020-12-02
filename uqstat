@@ -200,6 +200,9 @@ def main():
     df['user'] = df['Job_Owner'].apply(lambda x: x.split('@')[0])
     df['name'] = df['Job_Name']
 
+    if 'comment' not in df:
+        df['comment'] = None
+
     table =  df[['project','user','name','queue','state','ncpus','walltime','su','mem_pct', 'cpu_pct', 'qtime']]
 
     if args.comment:
