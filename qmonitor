@@ -75,7 +75,7 @@ def monitor(jobid):
         wall.update(w)
         wall.refresh()
 
-        time.sleep(10)
+        time.sleep(60)
         stat = list(qstat([jobid], show_finished=True).values())[0]
 
     cpu.close()
