@@ -116,7 +116,7 @@ if [ $AGENT -eq 1 ]; then
     ssh-add
 fi
 
-SSH='ssh -oBatchMode=yes'
+SSH='ssh -x -oBatchMode=yes'
 if [ -n "$USER" ]; then
     SSH="${SSH} -l ${USER}"
 fi
@@ -310,6 +310,6 @@ else
     echo "Can't find a way to open the URL automatically, please copy the URL above into your browser"
 fi
 set -e
+echo
 
-# Keep open as long as the tunnel exists
-wait "$tunnelid"
+$SSH "$LOGINNODE" /g/data/hh5/public/apps/nci_scripts/qmonitor $jobid

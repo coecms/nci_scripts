@@ -50,12 +50,10 @@ def metrics(stat):
 
 
 def monitor(jobid):
-    jobid, stat = list(qstat([jobid]).items())[0]
+    jobid, stat = list(qstat([jobid], show_finished=True).items())[0]
     c, m, w = metrics(stat)
 
     wall_request = pandas.to_timedelta(stat['Resource_List']['walltime']).seconds
-
-    print(f"{jobid} monitor")
 
     bar_format = '{l_bar}{bar}'
     cpu = tqdm.tqdm(unit="%", desc="CPU", total=100.0, position=0, bar_format=bar_format, leave=True)
@@ -78,7 +76,7 @@ def monitor(jobid):
         wall.refresh()
 
         time.sleep(10)
-        stat = list(qstat([jobid]).values())[0]
+        stat = list(qstat([jobid], show_finished=True).values())[0]
 
     cpu.close()
     mem.close()
