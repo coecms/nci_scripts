@@ -1,0 +1,97 @@
+#!/g/data/hh5/public/apps/nci_scripts/python-analysis3
+# Copyright 2020 Scott Wales
+# author: Scott Wales <scott.wales@unimelb.edu.au>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Monitor a PBS queue job
+"""
+
+import argparse
+import tqdm
+import subprocess
+import json
+import time
+import pandas
+import importlib
+from qtools import qstat, decode_bytes
+
+
+def metrics(stat):
+    cpu = 0
+    mem = 0
+    wall = 0
+
+    if stat['job_state'] == 'R':
+        mem_request = decode_bytes(stat['Resource_List']['mem'])
+        mem_used = decode_bytes(stat['resources_used']['mem'])
+        mem = mem_used / mem_request * 100
+
+        cpu_time = pandas.to_timedelta(stat['resources_used']['cput'])
+        wall_used = pandas.to_timedelta(stat['resources_used']['walltime'])
+        ncpus = stat['Resource_List']['ncpus']
+
+        cpu = cpu_time / wall_used / ncpus * 100
+
+        wall = wall_used.seconds
+
+    return cpu, mem, wall
+
+
+def monitor(jobid):
+    jobid, stat = list(qstat([jobid]).items())[0]
+    c, m, w = metrics(stat)
+
+    wall_request = pandas.to_timedelta(stat['Resource_List']['walltime']).seconds
+
+    print(f"{jobid} monitor")
+
+    bar_format = '{l_bar}{bar}'
+    cpu = tqdm.tqdm(unit="%", desc="CPU", total=100.0, position=0, bar_format=bar_format, leave=True)
+    mem = tqdm.tqdm(unit="%", desc="MEM", total=100.0, position=1, bar_format=bar_format, leave=True)
+    wall = tqdm.tqdm(unit='s', desc="TIME", total=wall_request, position=2, bar_format=bar_format, leave=True)
+
+    while stat["job_state"] in ["Q", "R"]:
+        c, m, w = metrics(stat)
+
+        cpu.reset()
+        cpu.update(c)
+        cpu.refresh()
+
+        mem.reset()
+        mem.update(m)
+        mem.refresh()
+
+        wall.reset()
+        wall.update(w)
+        wall.refresh()
+
+        time.sleep(10)
+        stat = list(qstat([jobid]).values())[0]
+
+    cpu.close()
+    mem.close()
+    wall.close()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("jobid")
+    args = parser.parse_args()
+
+    monitor(args.jobid)
+
+
+if __name__ == "__main__":
+    main()

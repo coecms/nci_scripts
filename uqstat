@@ -8,6 +8,7 @@ import re
 import sys
 import pymunge
 import requests
+from qtools import *
 
 # Base charge rates in SU/hour for 1 cpu with minimal memory
 charge_rates = {
@@ -37,25 +38,6 @@ base_mem = {
     'normalsl': 192/32,
     }
 
-def decode_bytes(s):
-    if pandas.isnull(s):
-        return s
-
-    scales = {
-        'k': 1024,
-        }
-    if not s.endswith('b'):
-        raise Exception(f"{s} doesn't look like a size")
-
-    scale = 1
-    s = s[:-1]
-
-    if not s[-1].isdigit():
-        scale = scales[s[-1]]
-        s = s[:-1]
-
-    return int(s) * scale
-
 
 def maybe_get(x, key):
     if pandas.isnull(x):
@@ -71,25 +53,6 @@ def get_list(s, lst, key):
         return s.get(lst, {}).get(key, None)
     except AttributeError:
         return None
-
-
-def clean_qstat_json(stream):
-    """
-    Clean up the improperly escaped JSON returned by qstat
-    """
-    string_entry_re = re.compile(r'^\s*"(?P<key>.+)":"(?P<value>.+)"(?P<comma>,?)$')
-
-    lines = []
-
-    for line in stream.splitlines():
-        match = string_entry_re.match(line)
-        if match is not None:
-            fixed_value = json.dumps(match.group('value'))
-            line = f'"{match.group("key")}":{fixed_value}{match.group("comma")}'
-
-        lines.append(line)
-
-    return json.loads(''.join(lines))
 
 def qstat_df(historical=False):
     command= ['/opt/pbs/default/bin/qstat','-f','-F','json']
