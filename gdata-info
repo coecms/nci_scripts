@@ -13,7 +13,7 @@ Options:
 EOF
 }
 
-mount_info=$(mount | sed -n 's|.*:/\(gdata\S\+\) on /g/data/\(\S\+\) type lustre.*|\1 \2|p' | sort) 
+mount_info=$(mount | sed -E -n 's|.*:/(\S+) on /g/data/(\S+) type lustre.*|\1 \2|p' | sort) 
 
 optspec="hP:m:M"
 while getopts "$optspec" optchar; do
@@ -25,6 +25,7 @@ while getopts "$optspec" optchar; do
         P)
             PROJ="${OPTARG}"
             grep "\s$PROJ\$" <<< "$mount_info" | cut -f 1 -d ' '
+            exit
             ;;
         m)
             MOUNT="${OPTARG}"
@@ -38,9 +39,11 @@ EOF
 )
 
             sort <<< "$both" | uniq -c | sed -n 's/^\s*2\s\(\S\+\)$/\1/p'
+            exit
             ;;
         M)
             cut -f 1 -d ' ' <<< "$mount_info" | sort -u
+            exit
             ;;
         *)
             print_help
@@ -49,4 +52,4 @@ EOF
     esac
 done
 
-
+echo "$mount_info"
