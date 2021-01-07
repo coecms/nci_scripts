@@ -42,7 +42,10 @@ def metrics(stat):
         wall_used = pandas.to_timedelta(stat['resources_used']['walltime'])
         ncpus = stat['Resource_List']['ncpus']
 
-        cpu = cpu_time / wall_used / ncpus * 100
+        try:
+            cpu = cpu_time / wall_used / ncpus * 100
+        except ZeroDivisionError:
+            cpu = 0
 
         wall = wall_used.seconds
 

@@ -32,7 +32,7 @@ def curl_command(cmd, target):
 
     root = ET.fromstring(r.stdout)
     if root.tag == '{DAV:}error':
-        raise DAVException(root.find('{http://sabredav.org/ns}message').text + ': ' + target)
+        raise DAVException(root.find('{http://sabredav.org/ns}message').text, target)
 
     return root
 
@@ -56,7 +56,13 @@ def mkdir(target):
     Make a directory 'target'
     """
     print("MKDIR",target)
-    curl_command(['-X','MKCOL'], target)
+    try:
+        curl_command(['-X','MKCOL'], target)
+    except DAVException as e:
+        if e.args[0] == 'The resource you tried to create already exists':
+            pass
+        else:
+            raise
 
 
 def put_recursive(path, target):
@@ -88,7 +94,7 @@ def main():
 
     sub_mkdir = subp.add_parser('mkdir', help="Make directory")
     sub_mkdir.add_argument("target")
-    sub_mkdir.set_defaults(func=put)
+    sub_mkdir.set_defaults(func=mkdir)
 
     args = parser.parse_args()
 
