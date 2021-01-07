@@ -46,7 +46,7 @@ NCPUS='1'
 WALLTIME=1:00:00
 JOBFS=100gb
 MEM=''
-CONDA_ENV=analysis3-20.07
+CONDA_ENV=analysis3-21.01
 DEBUG=""
 STORAGE=""
 
@@ -313,3 +313,8 @@ set -e
 echo
 
 $SSH "$LOGINNODE" /g/data/hh5/public/apps/nci_scripts/qmonitor $jobid
+
+# Move the cursor past the progress bars
+echo
+echo
+echo
