@@ -25,6 +25,7 @@ General Options:
 Queue Options:
     -q QUEUE:   Queue name
     -n NCPU:    Use NCPU cpus
+    -g NGPU:    Use NGPU gpus (only on some queues)
     -m MEM:     Memory allocation (default 4*NCPU GB)
     -t TIME:    Walltime limit (default 1 hour)
     -J JOBFS:   Jobfs allocation (default 100 GB)
@@ -43,6 +44,7 @@ PROJECT=''
 LOGINNODE='gadi.nci.org.au'
 QUEUE='normalbw'
 NCPUS='1'
+NGPUS=''
 WALLTIME=1:00:00
 JOBFS=100gb
 MEM=''
@@ -51,7 +53,7 @@ DEBUG=""
 STORAGE=""
 
 # Handle arguments
-optspec="hl:L:q:n:m:t:J:P:e:ds:"
+optspec="hl:L:q:n:m:t:J:P:e:ds:g:"
 while getopts "$optspec" optchar; do
     case "${optchar}" in
         h)
@@ -69,6 +71,9 @@ while getopts "$optspec" optchar; do
             ;;
         n)
             NCPUS="${OPTARG}"
+            ;;
+        g)
+            NGPUS="${OPTARG}"
             ;;
         t)
             WALLTIME="${OPTARG}"
@@ -140,6 +145,10 @@ if [ -z "$MEM" ]; then
 fi
 
 SUBMITOPTS="-N jupyter-lab ${PROJECT:+-P '$PROJECT'} -q '$QUEUE' -l 'ncpus=${NCPUS},mem=${MEM},walltime=${WALLTIME},jobfs=${JOBFS}'"
+
+if [ -n "$NGPUS" ]; then
+    SUBMITOPTS="$SUBMITOPTS -l 'ngpus=$NGPUS'"
+fi
 
 echo "Starting notebook on ${LOGINNODE}..."
 if [ -n "$DEBUG" ]; then
