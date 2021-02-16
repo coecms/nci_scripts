@@ -19,7 +19,7 @@ General Options:
     -h:         Print help
     -l USER:    NCI username
     -L HOST:    NCI login node (default 'gadi.nci.org.au')
-    -e ENVIRON: Conda environment 
+    -e ENVIRON: Conda environment
     -d:         Debug mode
 
 Queue Options:
