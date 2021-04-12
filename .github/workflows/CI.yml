@@ -39,5 +39,5 @@ jobs:
 
       - name: Run tests
         run: |
-          python -mpytest -s test;
+          python -mpytest -s .test;
 
