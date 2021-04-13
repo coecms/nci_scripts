@@ -9,22 +9,25 @@ from datetime import datetime, time, timedelta
 from io import StringIO
 from math import log
 
-unit_base = { 'B' : 1024, 'SU' : 1000 }
+unit_base = {"B": 1024, "SU": 1000}
+
 
 def extract_num_unit(s):
     # Match a number (possibly floating point 100.00 style) and a unit
     try:
-        size, unit = re.findall(r'(\d+.\d+|\d+)\s*(\D*)$',s)[0]
+        size, unit = re.findall(r"(\d+.\d+|\d+)\s*(\D*)$", s)[0]
     except:
-        print('Failed to match size string: ',s)
+        print("Failed to match size string: ", s)
         sys.exit()
     return float(size), unit
 
-def pretty_size(n,pow=0,b=1024,u='B',pre=['']+[p for p in'KMGTPEZY']):
-    pow,n=min(int(log(max(n*b**pow,1),b)),len(pre)-1),n*b**pow
-    return "%%.%if %%s%%s"%abs(pow%(-pow-1))%(n/b**float(pow),pre[pow],u)
-        
-def parse_size(size,b=1024,u='B',pre=['']+[p for p in'KMGTPEZY']):
+
+def pretty_size(n, pow=0, b=1024, u="B", pre=[""] + [p for p in "KMGTPEZY"]):
+    pow, n = min(int(log(max(n * b ** pow, 1), b)), len(pre) - 1), n * b ** pow
+    return "%%.%if %%s%%s" % abs(pow % (-pow - 1)) % (n / b ** float(pow), pre[pow], u)
+
+
+def parse_size(size, b=1024, u="B", pre=[""] + [p for p in "KMGTPEZY"]):
     """Parse human readable file sizes, e.g. 16.4TB, 1000KSU"""
     intsize, unit = extract_num_unit(size)
 
@@ -37,9 +40,10 @@ def parse_size(size,b=1024,u='B',pre=['']+[p for p in'KMGTPEZY']):
     # Check if we know this unit's base, otherwise use default
     if base in unit_base:
         b = unit_base[base]
-    pow = { k+base:v for v, k in enumerate(pre) }
+    pow = {k + base: v for v, k in enumerate(pre)}
 
-    return float(intsize)*(b**pow[unit])
+    return float(intsize) * (b ** pow[unit])
+
 
 def to_seconds(dt):
     """
@@ -48,19 +52,21 @@ def to_seconds(dt):
     and assume %H:%M or %H:%M:%s with or without leading zeroes
     """
 
-    f = list(map(int, dt.split(':')))
+    f = list(map(int, dt.split(":")))
     if len(f) == 3:
         hr, m, s = f
     if len(f) == 2:
         hr, m = f
-        s = 0.
+        s = 0.0
     dt = timedelta(hours=hr, minutes=m, seconds=s)
 
     return dt.total_seconds()
 
+
 def load_data():
 
-    queue_info_csv = StringIO("""
+    queue_info_csv = StringIO(
+        """
 queue,charge,ncpus,mem,jobfs
 normal,2.,48,192GB,400GB
 express,6.,48,192GB,400GB
@@ -73,28 +79,34 @@ normalsl,1.5,32,192GB,400GB
 hugemembw,1.25,28,1020GB,390GB
 megamembw,1.25,32,3000GB,800GB
 copyq,2.,1,190GB,400GB
-""")
+"""
+    )
 
     return pandas.read_csv(queue_info_csv)
+
 
 def qcost(queue, ncpus, memory, walltime):
     """
     Return the cost in SUs for a PBS job
     """
 
-    seconds_in_an_hour = 3600.
+    seconds_in_an_hour = 3600.0
 
     # Normalise time multiplier to 1 hour
     timefactor = to_seconds(walltime) / seconds_in_an_hour
 
     queue_info = load_data()
 
-    info = queue_info[queue_info['queue']==queue]
+    info = queue_info[queue_info["queue"] == queue]
 
     memory = parse_size(memory)
     totalmem = parse_size(info.mem.values[0])
 
-    cost = max(ncpus, info.ncpus.values[0]*(memory/totalmem)) * info.charge.values[0] * timefactor
+    cost = (
+        max(ncpus, info.ncpus.values[0] * (memory / totalmem))
+        * info.charge.values[0]
+        * timefactor
+    )
 
     return cost
 
@@ -102,32 +114,37 @@ def qcost(queue, ncpus, memory, walltime):
 def parse_args(args):
 
     parser = argparse.ArgumentParser(
-        description=("Return the cost (in SUs) for a PBS job submitted on gadi.\n" + 
-                     "No checking is done to ensure requests are within queue limits."),
-        epilog="e.g. %(prog)s -q normal -n 4 -m 60GB -t 3:00:00"
-        )
-    parser.add_argument("-q","--queue", help="PBS queue", required=True)
-    parser.add_argument("-n","--ncpus", help="Number of cpus", required=True, type=int)
-    parser.add_argument("-m","--mem",   help="Requested memory", required=True)
-    parser.add_argument("-t","--time",  help="Job walltime (hours)")
+        description=(
+            "Return the cost (in SUs) for a PBS job submitted on gadi.\n"
+            + "No checking is done to ensure requests are within queue limits."
+        ),
+        epilog="e.g. %(prog)s -q normal -n 4 -m 60GB -t 3:00:00",
+    )
+    parser.add_argument("-q", "--queue", help="PBS queue", required=True)
+    parser.add_argument("-n", "--ncpus", help="Number of cpus", required=True, type=int)
+    parser.add_argument("-m", "--mem", help="Requested memory", required=True)
+    parser.add_argument("-t", "--time", help="Job walltime (hours)")
 
     return parser.parse_args(args)
+
 
 def main(args):
 
     if args.time is None:
-        args.time = '1:00:00'
+        args.time = "1:00:00"
         print("Assuming walltime: 1:00:00")
 
     cost = qcost(args.queue, args.ncpus, args.mem, args.time)
 
-    print("{cost}".format(cost=pretty_size(cost,u='SU',b=1000.)))
+    print("{cost}".format(cost=pretty_size(cost, u="SU", b=1000.0)))
+
 
 def main_argv():
-    
+
     args = parse_args(sys.argv[1:])
 
     main(args)
+
 
 if __name__ == "__main__":
 
