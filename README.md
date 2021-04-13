@@ -12,6 +12,41 @@ $ uqstat
 961571.gadi-pbs    STDIN  copyq-exec     R      1 01:26:18  3.0  100.000191  85.940518 00:10:00
 ```
 
+qcost
+------
+
+Calculates the cost, in SU, for a job submitted to the PBS system. The [PBS queue information is provided by NCI](https://opus.nci.org.au/display/Help/Queue+Limits)
+but it can be tedious to determine which configuration of queue and memory request should be used
+to minimise job cost. `qcost` was created to make this process easier.
+
+Usage:
+```
+$ ./qcost -h
+usage: qcost [-h] -q QUEUE -n NCPUS -m MEM [-t TIME]
+
+Return the cost (in SUs) for a PBS job submitted on gadi. No checking is done to ensure requests are
+within queue limits.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -q QUEUE, --queue QUEUE
+                        PBS queue
+  -n NCPUS, --ncpus NCPUS
+                        Number of cpus
+  -m MEM, --mem MEM     Requested memory
+  -t TIME, --time TIME  Job walltime (hours)
+
+e.g. qcost -q normal -n 4 -m 60GB -t 3:00:00
+```
+
+Note that if no time is specified it defaults to 1 hour (`1:00:00`). Walltime can be specified as `H:M` or `H:M:S`. Memory must be specified in units of bytes (`B`), e.g. `160GB`, `2000MB`
+
+Example and output:
+```
+$ qcost -q normal -n 4 -m 60GB -t 3:00:00
+90 SU
+```
+
 gadi_jupyter
 ------------
 
