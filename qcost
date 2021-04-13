@@ -9,8 +9,6 @@ from datetime import datetime, time, timedelta
 from io import StringIO
 from math import log
 
-queue_info = None
-
 unit_base = { 'B' : 1024, 'SU' : 1000 }
 
 def extract_num_unit(s):
@@ -84,15 +82,12 @@ def qcost(queue, ncpus, memory, walltime):
     Return the cost in SUs for a PBS job
     """
 
-    global queue_info
-
     seconds_in_an_hour = 3600.
 
     # Normalise time multiplier to 1 hour
     timefactor = to_seconds(walltime) / seconds_in_an_hour
 
-    if queue_info is None:
-        queue_info = load_data()
+    queue_info = load_data()
 
     info = queue_info[queue_info['queue']==queue]
 
