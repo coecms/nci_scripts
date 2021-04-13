@@ -48,7 +48,7 @@ NGPUS=''
 WALLTIME=1:00:00
 JOBFS=100gb
 MEM=''
-CONDA_ENV=analysis3-21.01
+CONDA_ENV=analysis3
 DEBUG=""
 STORAGE=""
 
