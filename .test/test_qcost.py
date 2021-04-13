@@ -35,3 +35,19 @@ def test_qcost():
 
     assert qcost.qcost("normalsl", 4, "4GB", "1:00:00") == 4 * 1.5
     assert qcost.qcost("normalsl", 4, "30GB", "1:00:00") == 5 * 1.5
+
+
+def test_argument_parsing():
+
+    assert qcost.parse_args(["-m 32GB", "-q express", "-n 16"]).mem == " 32GB"
+    assert qcost.parse_args(["-m 32GB", "-q express", "-n 16"]).ncpus == 16
+    assert qcost.parse_args(["-m 32GB", "-q express", "-n 16"]).queue == " express"
+
+    assert (
+        qcost.parse_args(["--mem=32GB", "--queue=express", "--ncpus=16"]).mem == "32GB"
+    )
+    assert qcost.parse_args(["--mem=32GB", "--queue=express", "--ncpus=16"]).ncpus == 16
+    assert (
+        qcost.parse_args(["--mem=32GB", "--queue=express", "--ncpus=16"]).queue
+        == "express"
+    )
