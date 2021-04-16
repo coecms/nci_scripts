@@ -25,8 +25,9 @@ Usage:
 ./qcost -h
 usage: qcost [-h] -q QUEUE -n NCPUS -m MEM [-t TIME]
 
-Return what it would cost (in SUs) for a PBS job submitted on gadi with the same configuration. No checking is done to ensure
-requests are within queue limits.
+Return what it would cost (in SUs) for a PBS job submitted on gadi with the same               
+configuration. No checking is done to ensure requests are within queue limits.                 
+
 
 optional arguments:
   -h, --help            show this help message and exit
