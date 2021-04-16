@@ -15,17 +15,18 @@ $ uqstat
 qcost
 ------
 
-Calculates the cost, in SU, for a job submitted to the PBS system. The [PBS queue information is provided by NCI](https://opus.nci.org.au/display/Help/Queue+Limits)
+Calculates what it would cost, in SU, for a job submitted to the PBS system with the same configuration. 
+The information is all contained in the [PBS queue information is provided by NCI](https://opus.nci.org.au/display/Help/Queue+Limits)
 but it can be tedious to determine which configuration of queue and memory request should be used
 to minimise job cost. `qcost` was created to make this process easier.
 
 Usage:
 ```
-$ ./qcost -h
+./qcost -h
 usage: qcost [-h] -q QUEUE -n NCPUS -m MEM [-t TIME]
 
-Return the cost (in SUs) for a PBS job submitted on gadi. No checking is done to ensure requests are
-within queue limits.
+Return what it would cost (in SUs) for a PBS job submitted on gadi with the same configuration. No checking is done to ensure
+requests are within queue limits.
 
 optional arguments:
   -h, --help            show this help message and exit
