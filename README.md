@@ -1,6 +1,13 @@
 Helpful scripts for working at NCI
 ==================================
 
+To use these scripts on NCI infrastructure do the following:
+
+```
+module use /g/data/hh5/public/modules
+module load nci-scripts
+```
+
 uqstat
 ------
 
