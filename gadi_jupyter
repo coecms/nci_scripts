@@ -179,7 +179,7 @@ if [ ! -d /g/data/hh5 ]; then
 fi
 
 # Check if already running
-if [ -f "\$WORKDIR/jobid" ] && [ "\$(qstat -x \$(cat "\$WORKDIR/jobid") | sed -n '\$s/\S\+\s\+jupyter-lab\s.*\s[QR]\s\+\S\+\s*$/\0/p')" ] ; then
+if [ -f "\$WORKDIR/jobid" ] && [ "\$(qstat -x \$(cat "\$WORKDIR/jobid") 2> /dev/null | sed -n '\$s/\S\+\s\+jupyter-lab\s.*\s[QR]\s\+\S\+\s*$/\0/p')" ] ; then
     while [ ! -f "\$WORKDIR/message" ]; do
         sleep 5
     done
