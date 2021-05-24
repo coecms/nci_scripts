@@ -53,7 +53,13 @@ def metrics(stat):
 
 
 def monitor(jobid):
-    jobid, stat = list(qstat([jobid], show_finished=True).items())[0]
+    stat = None
+    while stat is None:
+        try:
+            stat = list(qstat([jobid], show_finished=True).values())[0]
+        except:
+            time.sleep(30)
+
     c, m, w = metrics(stat)
 
     wall_request = pandas.to_timedelta(stat['Resource_List']['walltime']).seconds
@@ -79,7 +85,12 @@ def monitor(jobid):
         wall.refresh()
 
         time.sleep(60)
-        stat = list(qstat([jobid], show_finished=True).values())[0]
+        try:
+            # Handle PBS server outages
+            newstat = list(qstat([jobid], show_finished=True).values())[0]
+            stat = newstat
+        except:
+            pass
 
     cpu.close()
     mem.close()
