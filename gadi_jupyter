@@ -217,6 +217,7 @@ export DASK_LABEXTENSION__FACTORY__KWARGS__MEMORY_LIMIT=3900MB
 export DASK_LABEXTENSION__FACTORY__KWARGS__LOCAL_DIRECTORY=\\\$PBS_JOBFS/dask-worker-space
 export DASK_LABEXTENSION__DEFAULT__WORKERS=\\\$PBS_NCPUS
 export DASK_DISTRIBUTED__DASHBOARD__LINK="/proxy/{port}/status"
+export DASK_TEMPORARY_DIRECTORY="\\\$TMPDIR"
 
 jupyter notebook --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
 EOQ
