@@ -276,7 +276,7 @@ echo "Starting tunnel..."
 if [ -n "$DEBUG" ]; then
     echo "DEBUG:" $SSH -N -L "${local_port}:$jobhost:${remote_port}" "$LOGINNODE"
 fi
-$SSH -N -L "${local_port}:$jobhost:${remote_port}" "$LOGINNODE" &> /dev/null &
+$SSH -q -N -L "${local_port}:$jobhost:${remote_port}" "$LOGINNODE" &
 tunnelid=$!
 
 # Shut everything down on exit
@@ -285,8 +285,12 @@ trap "{ echo 'Closing connections... (Ctrl-C will leave job in the queue)' ; kil
 URL="http://localhost:${local_port}/lab?token=${token}"
 
 # Wait for startup then open a browser
-until curl $URL &> /dev/null; do echo -n '.'; sleep 1; done
-echo
+if which curl > /dev/null; then
+    until curl $URL &> /dev/null; do echo -n '.'; sleep 1; done
+    echo
+else
+    sleep 5
+fi
 
 cat << EOF
 
