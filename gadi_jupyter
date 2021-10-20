@@ -21,6 +21,7 @@ General Options:
     -L HOST:    NCI login node (default 'gadi.nci.org.au')
     -e ENVIRON: Conda environment
     -d:         Debug mode
+    -D:         Profile mode
 
 Queue Options:
     -q QUEUE:   Queue name
@@ -51,9 +52,10 @@ MEM=''
 CONDA_ENV=analysis3
 DEBUG=""
 STORAGE=""
+STRACE=""
 
 # Handle arguments
-optspec="hl:L:q:n:m:t:J:P:e:ds:g:"
+optspec="hl:L:q:n:m:t:J:P:e:ds:g:D"
 while getopts "$optspec" optchar; do
     case "${optchar}" in
         h)
@@ -95,6 +97,10 @@ while getopts "$optspec" optchar; do
             ;;
         d)
             DEBUG=true
+            ;;
+        D)
+            DEBUG=true
+            STRACE="strace --follow-forks -e trace=%file --syscall-times --absolute-timestamps=precision:us --output=\$WORKDIR/strace"
             ;;
         *)
             print_help
@@ -156,7 +162,7 @@ if [ -n "$DEBUG" ]; then
 fi
 
 # Check connection
-$SSH "$LOGINNODE" true
+$SSH "$LOGINNODE" echo "Working directory: $WORKDIR"
 
 echo "qsub ${SUBMITOPTS}"
 
@@ -219,7 +225,7 @@ export DASK_LABEXTENSION__DEFAULT__WORKERS=\\\$PBS_NCPUS
 export DASK_DISTRIBUTED__DASHBOARD__LINK="/proxy/{port}/status"
 export DASK_TEMPORARY_DIRECTORY="\\\$TMPDIR"
 
-jupyter notebook --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
+$STRACE jupyter notebook --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
 EOQ
 
 # Required for conda
