@@ -33,8 +33,8 @@ base_mem = {
     'gpuvolta': 8,
     'hugemembw': 1024/28,
     'megamembw': 3072/32,
-    'expressbw': 128/28,
-    'normalbw': 128/28,
+    'expressbw': 256/28,
+    'normalbw': 256/28,
     'normalsl': 192/32,
     }
 
