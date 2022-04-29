@@ -59,8 +59,13 @@ $ qcost -q normal -n 4 -m 60GB -t 3:00:00
 gadi_jupyter
 ------------
 
-Run a Jupyter notebook on Gadi, displaying it in a local web browser 
-(run from your own computer, works on mac/linux/windows (using e.g. [git bash](https://gitforwindows.org/))).
+Run a Jupyter notebook on Gadi, displaying it in a local web browser. 
+
+**THIS MUST BE RUN FROM YOUR OWN COMPUTER**
+
+So the first step is to clone this repository to your local workstation. It
+works on mac/linux/windows (for windows using e.g. [git bash](https://gitforwindows.org/)
+or [Windows Ssubsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install)).
 
 By default the script will spawn a job with a single CPU, 4GB of memory 
 and a walltime of 1 hour.
