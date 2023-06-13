@@ -225,7 +225,7 @@ export DASK_LABEXTENSION__DEFAULT__WORKERS=\\\$PBS_NCPUS
 export DASK_DISTRIBUTED__DASHBOARD__LINK="/proxy/{port}/status"
 export DASK_TEMPORARY_DIRECTORY="\\\$TMPDIR"
 
-$STRACE jupyter notebook --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
+$STRACE jupyter lab --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
 EOQ
 
 # Required for conda
