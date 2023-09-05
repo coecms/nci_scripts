@@ -73,6 +73,7 @@ express,6.,48,192GB,400GB
 hugemem,3.,48,1470GB,1400GB
 megamem,5.,48,2990GB,1400GB
 gpuvolta,3.,12,382GB,400GB
+dgxa100,4.5,16,2000GB,28TB
 normalbw,1.25,28,256GB,400GB
 expressbw,3.75,28,256GB,400GB
 normalsl,1.5,32,192GB,400GB
