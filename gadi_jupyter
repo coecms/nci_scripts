@@ -177,9 +177,9 @@ set -eu
 WORKDIR="$WORKDIR"
 mkdir -p "\$WORKDIR"
 
-# Check if a hh5 member
-if [ ! -d /g/data/hh5 ]; then
-    echo "ERROR: \$USER is not a member of hh5. Join at https://my.nci.org.au/mancini/project/hh5/join" >&2
+# Check if a xp65 member
+if [ ! -d /g/data/xp65 ]; then
+    echo "ERROR: \$USER is not a member of xp65. Join at https://my.nci.org.au/mancini/project/xp65/join" >&2
     echo "x x x x ERROR"
     exit
 fi
@@ -200,8 +200,8 @@ cat > "\$WORKDIR/runjp.sh" <<EOQ
 
 module purge
 
-eval "\\\$(/g/data/hh5/public/apps/miniconda3/bin/conda shell.bash hook)"
-conda activate "${CONDA_ENV}"
+module use /g/data/xp65/public/modules
+module load conda/analysis3
 
 set -eu
 
@@ -225,11 +225,11 @@ export DASK_LABEXTENSION__DEFAULT__WORKERS=\\\$PBS_NCPUS
 export DASK_DISTRIBUTED__DASHBOARD__LINK="/proxy/{port}/status"
 export DASK_TEMPORARY_DIRECTORY="\\\$TMPDIR"
 
-$STRACE jupyter lab --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
+$STRACE /g/data/xp65/public/apps/med_conda_scripts/analysis3-25.03.d/bin/jupyter lab --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
 EOQ
 
 # Required for conda
-storage="gdata/hh5"
+storage="gdata/xp65"
 
 if [ -n "$STORAGE" ]; then
     storage="$STORAGE+\$storage"
