@@ -177,9 +177,16 @@ set -eu
 WORKDIR="$WORKDIR"
 mkdir -p "\$WORKDIR"
 
-# Check if a xp65 member
+# Check if an xp65 member
 if [ ! -d /g/data/xp65 ]; then
     echo "ERROR: \$USER is not a member of xp65. Join at https://my.nci.org.au/mancini/project/xp65/join" >&2
+    echo "x x x x ERROR"
+    exit
+fi
+
+# Check if an ik11 member
+if [ ! -d /g/data/ik11 ]; then
+    echo "ERROR: \$USER is not a member of ik11. Join at https://my.nci.org.au/mancini/project/ik11/join" >&2
     echo "x x x x ERROR"
     exit
 fi
