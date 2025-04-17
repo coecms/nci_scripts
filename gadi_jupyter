@@ -229,7 +229,7 @@ $STRACE jupyter lab --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTN
 EOQ
 
 # Required for conda + nci_scripts
-storage="gdata/xp65+gdata/hh5"
+storage="gdata/xp65+gdata/ik11"
 
 if [ -n "$STORAGE" ]; then
     storage="$STORAGE+\$storage"
@@ -334,7 +334,7 @@ fi
 set -e
 echo
 
-$SSH "$LOGINNODE" /g/data/hh5/public/apps/nci_scripts/qmonitor $jobid
+$SSH "$LOGINNODE" /g/data/ik11/nci_scripts/qmonitor $jobid
 
 # Move the cursor past the progress bars
 echo
