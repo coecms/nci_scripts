@@ -1,3 +1,12 @@
+# THIS REPO IS NO LONGER BEING UPDATED!!
+
+An updated version is being maintained by [The ARC Centre of Excellence for the Weather of the 21st Century](https://www.21centuryweather.org.au):
+
+https://github.com/21centuryweather/nci_scripts
+
+
+
+
 Helpful scripts for working at NCI
 ==================================
 
