@@ -228,8 +228,8 @@ export DASK_TEMPORARY_DIRECTORY="\\\$TMPDIR"
 $STRACE jupyter lab --NotebookApp.token="\\\$TOKEN" --no-browser --ip="\\\$HOSTNAME" --port "\\\$PORT" --port-retries=0
 EOQ
 
-# Required for conda
-storage="gdata/xp65"
+# Required for conda + nci_scripts
+storage="gdata/xp65+gdata/hh5"
 
 if [ -n "$STORAGE" ]; then
     storage="$STORAGE+\$storage"
